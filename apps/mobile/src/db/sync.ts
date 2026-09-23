@@ -5,6 +5,7 @@ const API = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3001';
 
 export async function pullChanges(lastPulledAt: number | null): Promise<PullResponse> {
   const { token, patientId, deviceId } = useSession.getState();
+  if (!token || !patientId) throw new Error('not paired');
   const res = await fetch(`${API}/sync/pull`, {
     method: 'POST',
     headers: {
@@ -19,13 +20,14 @@ export async function pullChanges(lastPulledAt: number | null): Promise<PullResp
 
 export async function pushChanges(body: Omit<PushRequest, 'patientId' | 'deviceId'>): Promise<void> {
   const { token, patientId, deviceId } = useSession.getState();
+  if (!token || !patientId) throw new Error('not paired');
   const res = await fetch(`${API}/sync/push`, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
       authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ ...body, patientId, deviceId } satisfies PushRequest),
+    body: JSON.stringify({ ...body, patientId: patientId as string, deviceId } satisfies PushRequest),
   });
   if (!res.ok) throw new Error(`push failed ${res.status}`);
 }

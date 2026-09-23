@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
 import { t } from '@cognigame/shared-types';
 import { BigButton } from '../ui/BigButton';
+import { Screen } from '../ui/Screen';
 import { useSession } from '../state/session';
 import { speak } from '../voice/tts';
 import { scheduleReminder } from '../notifications/reminders';
@@ -43,18 +44,53 @@ export function RemindersScreen({ onBack }: { onBack: () => void }) {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F6EFE4', padding: 24 }}>
+    <Screen>
       <Text style={{ fontSize: 36, fontWeight: '700', color: '#0F3D2E' }}>{t(language, 'reminders')}</Text>
-      {items.map((item) => (
-        <View key={item.id} style={{ marginTop: 20, backgroundColor: 'white', borderRadius: 24, padding: 16 }}>
-          <Text style={{ fontSize: 26 }}>{item.title}</Text>
-          <Text style={{ fontSize: 18, color: '#4A3728' }}>{item.status}</Text>
-          <BigButton label={t(language, 'done')} onPress={() => mark(item.id, 'completed')} />
-          <BigButton label={t(language, 'skip')} onPress={() => mark(item.id, 'missed')} tone="danger" />
-        </View>
-      ))}
+      {items.map((item) => {
+        const done = item.status === 'completed';
+        const missed = item.status === 'missed';
+        return (
+          <View
+            key={item.id}
+            style={{
+              marginTop: 20,
+              backgroundColor: '#FFFBFA',
+              borderRadius: 24,
+              padding: 20,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <Feather name={item.type === 'medicine' ? 'plus-circle' : 'droplet'} size={22} color="#0F3D2E" />
+              <Text style={{ fontSize: 26, fontWeight: '700', color: '#0F3D2E', flex: 1 }}>{item.title}</Text>
+            </View>
+            <View
+              style={{
+                alignSelf: 'flex-start',
+                marginTop: 10,
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                borderRadius: 999,
+                backgroundColor: done ? '#E4EDE6' : missed ? '#F8D7D8' : '#F7E3B0',
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: '700',
+                  color: done ? '#1F6F4A' : missed ? '#9B1D20' : '#5C4A3A',
+                  textTransform: 'capitalize',
+                }}
+              >
+                {item.status}
+              </Text>
+            </View>
+            <BigButton label={t(language, 'done')} onPress={() => mark(item.id, 'completed')} />
+            <BigButton label={t(language, 'skip')} onPress={() => mark(item.id, 'missed')} tone="danger" />
+          </View>
+        );
+      })}
       <BigButton label={t(language, 'listen')} onPress={() => speak(language, 'reminders')} tone="ghost" />
       <BigButton label={t(language, 'done')} onPress={onBack} tone="ghost" />
-    </SafeAreaView>
+    </Screen>
   );
 }

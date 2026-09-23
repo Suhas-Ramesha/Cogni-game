@@ -29,7 +29,7 @@ services:
       DEMO_JWT_SECRET: change-me-in-production-use-long-random
       DIFFICULTY_SERVICE_URL: http://difficulty:8001
       INTERNAL_SERVICE_KEY: dev-internal-key
-      CORS_ORIGINS: http://localhost:3000
+      CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
     ports:
       - "3001:3001"
 

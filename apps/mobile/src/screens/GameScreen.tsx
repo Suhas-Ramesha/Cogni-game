@@ -1,9 +1,9 @@
 import { useMemo, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { getGame } from '@cognigame/game-engine';
 import { t, type GameType } from '@cognigame/shared-types';
 import { BigButton } from '../ui/BigButton';
+import { Screen } from '../ui/Screen';
 import { useSession } from '../state/session';
 import { speak } from '../voice/tts';
 import { queueChange } from '../db/sync';
@@ -41,8 +41,10 @@ export function GameScreen({ type, onExit }: { type: GameType; onExit: () => voi
   const payload = round.payload as Record<string, unknown>;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F6EFE4', padding: 20 }}>
-      <Text style={{ fontSize: 32, fontWeight: '700', color: '#0F3D2E' }}>{t(language, round.promptKey)}</Text>
+    <Screen>
+      <Text style={{ fontSize: 32, fontWeight: '700', color: '#0F3D2E', lineHeight: 40 }}>
+        {t(language, round.promptKey)}
+      </Text>
       <BigButton label={t(language, 'listen')} onPress={() => speak(language, round.narrationKey)} tone="ghost" />
 
       {type === 'memory_match' ? (
@@ -50,22 +52,28 @@ export function GameScreen({ type, onExit }: { type: GameType; onExit: () => voi
           {(payload.tiles as { tileId: string; label: string }[]).map((tile) => (
             <Pressable
               key={tile.tileId}
+              accessibilityRole="button"
+              accessibilityLabel={tile.label}
               onPress={() => {
                 const next = matches + 1;
                 setMatches(next);
                 const pairs = Number(payload.pairs);
                 if (next >= pairs) finish({ matches: pairs });
               }}
-              style={{
-                width: '46%',
+              style={({ pressed }) => ({
+                width: '47%',
                 minHeight: 88,
                 backgroundColor: '#1F6F4A',
                 borderRadius: 20,
                 alignItems: 'center',
                 justifyContent: 'center',
-              }}
+                padding: 12,
+                opacity: pressed ? 0.88 : 1,
+              })}
             >
-              <Text style={{ color: '#F6EFE4', fontSize: 22 }}>{tile.label}</Text>
+              <Text style={{ color: '#FFFBFA', fontSize: 22, fontWeight: '700', textAlign: 'center' }}>
+                {tile.label}
+              </Text>
             </Pressable>
           ))}
         </View>
@@ -76,16 +84,20 @@ export function GameScreen({ type, onExit }: { type: GameType; onExit: () => voi
           {((payload.options as { id: string; label?: string; color?: string }[]) ?? []).map((opt) => (
             <Pressable
               key={opt.id}
+              accessibilityRole="button"
+              accessibilityLabel={opt.label ?? opt.id}
               onPress={() => finish({ chosenId: opt.id })}
-              style={{
+              style={({ pressed }) => ({
                 minHeight: 80,
                 borderRadius: 20,
                 backgroundColor: opt.color ?? '#0F3D2E',
                 alignItems: 'center',
                 justifyContent: 'center',
-              }}
+                paddingHorizontal: 16,
+                opacity: pressed ? 0.88 : 1,
+              })}
             >
-              <Text style={{ color: '#F6EFE4', fontSize: 24 }}>{opt.label ?? opt.id}</Text>
+              <Text style={{ color: '#FFFBFA', fontSize: 24, fontWeight: '700' }}>{opt.label ?? opt.id}</Text>
             </Pressable>
           ))}
         </View>
@@ -110,15 +122,15 @@ export function GameScreen({ type, onExit }: { type: GameType; onExit: () => voi
       {type === 'emotional_engagement' ? (
         <View style={{ gap: 10, marginTop: 12 }}>
           {(payload.choices as { id: string; emoji: string; label: string }[]).map((c) => (
-            <BigButton key={c.id} label={`${c.emoji}  ${c.label}`} onPress={() => finish({ mood: c.id })} tone="accent" />
+            <BigButton key={c.id} label={c.label} onPress={() => finish({ mood: c.id })} tone="accent" />
           ))}
         </View>
       ) : null}
 
       {done ? (
-        <Text style={{ fontSize: 28, marginTop: 24, color: '#1F6F4A' }}>{done}</Text>
+        <Text style={{ fontSize: 28, marginTop: 24, color: '#1F6F4A', fontWeight: '700' }}>{done}</Text>
       ) : null}
       <BigButton label={t(language, 'done')} onPress={onExit} tone="ghost" />
-    </SafeAreaView>
+    </Screen>
   );
 }

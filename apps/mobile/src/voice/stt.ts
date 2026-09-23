@@ -39,7 +39,7 @@ export class VoskSpeechToText implements SpeechToTextEngine {
     return false;
   }
 
-  async start(): Promise<void> {
+  async start(_onResult: (t: Transcript) => void): Promise<void> {
     throw new VoskNotLinkedError();
   }
 
