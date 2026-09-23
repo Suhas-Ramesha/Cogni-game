@@ -27,8 +27,12 @@
       "esbuild",
       "unrs-resolver",
       "protobufjs",
-      "@firebase/util", "esbuild",
+      "@firebase/util",
+      "esbuild",
       "@prisma/engines"
     ]
+  },
+  "devDependencies": {
+    "tsx": "^4.19.3"
   }
 }

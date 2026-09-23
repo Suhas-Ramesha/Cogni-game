@@ -28,16 +28,13 @@
       "permissions": ["RECORD_AUDIO", "VIBRATE", "RECEIVE_BOOT_COMPLETED", "SCHEDULE_EXACT_ALARM"]
     },
     "plugins": [
-      "expo-font",
-      "expo-av",
       [
         "expo-notifications",
         {
           "color": "#E0A100",
           "sounds": []
         }
-      ],
-      "expo-speech"
+      ]
     ],
     "extra": {
       "eas": {
