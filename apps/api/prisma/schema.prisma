@@ -1,0 +1,223 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CaregiverRole {
+  family
+  health_worker
+}
+
+enum LanguageCode {
+  en
+  as
+  kha
+}
+
+enum GameType {
+  memory_match
+  attention
+  daily_routine
+  pattern_recognition
+  emotional_engagement
+}
+
+enum ReminderType {
+  medicine
+  hydration
+  activity
+  appointment
+}
+
+enum ReminderStatus {
+  scheduled
+  due
+  completed
+  missed
+  cancelled
+}
+
+enum AlertType {
+  missed_reminder
+  performance_drop
+  inactivity
+}
+
+enum AlertSeverity {
+  info
+  warning
+  critical
+}
+
+enum Mood {
+  joyful
+  calm
+  okay
+  sad
+  anxious
+}
+
+model Caregiver {
+  id          String         @id @default(uuid())
+  firebaseUid String?        @unique
+  name        String
+  phone       String         @unique
+  role        CaregiverRole
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  deletedAt   DateTime?
+  fieldClocks Json           @default("{}")
+  patients    Patient[]
+  alerts      Alert[]
+}
+
+model Patient {
+  id                     String              @id @default(uuid())
+  name                   String
+  preferredLanguage      LanguageCode        @default(en)
+  dateOfBirth            DateTime
+  cognitiveBaselineScore Float               @default(50)
+  currentDifficulty      Int                 @default(2)
+  caregiverId            String
+  caregiver              Caregiver           @relation(fields: [caregiverId], references: [id])
+  pairingCode            String              @unique
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+  deletedAt              DateTime?
+  fieldClocks            Json                @default("{}")
+  sessions               GameSession[]
+  reminders              Reminder[]
+  metrics                CognitiveMetric[]
+  devices                Device[]
+  moods                  MoodCheckIn[]
+  alerts                 Alert[]
+  recommendations        DifficultyRecommendation[]
+}
+
+model Device {
+  id           String    @id @default(uuid())
+  patientId    String
+  patient      Patient   @relation(fields: [patientId], references: [id])
+  platform     String    @default("unknown")
+  lastSyncedAt DateTime?
+  lastSeenAt   DateTime?
+  appVersion   String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model GameSession {
+  id              String    @id @default(uuid())
+  patientId       String
+  patient         Patient   @relation(fields: [patientId], references: [id])
+  gameType        GameType
+  difficultyLevel Int
+  score           Float
+  accuracy        Float
+  reactionTimeMs  Int
+  completedAt     DateTime
+  syncedAt        DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+  fieldClocks     Json      @default("{}")
+  metadata        Json      @default("{}")
+
+  @@index([patientId, completedAt])
+}
+
+model Reminder {
+  id                  String         @id @default(uuid())
+  patientId           String
+  patient             Patient        @relation(fields: [patientId], references: [id])
+  type                ReminderType
+  title               String
+  scheduledTime       DateTime
+  recurrenceRule      String?
+  status              ReminderStatus @default(scheduled)
+  localNotificationId String?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  deletedAt           DateTime?
+  fieldClocks         Json           @default("{}")
+
+  @@index([patientId, scheduledTime])
+}
+
+model CognitiveMetric {
+  id          String    @id @default(uuid())
+  patientId   String
+  patient     Patient   @relation(fields: [patientId], references: [id])
+  metricType  String
+  value       Float
+  recordedAt  DateTime
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  fieldClocks Json      @default("{}")
+
+  @@index([patientId, recordedAt])
+}
+
+model GameContentPack {
+  id                 String       @id @default(uuid())
+  language           LanguageCode
+  theme              String
+  assetBundleVersion String
+  offlineAvailable   Boolean      @default(true)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  deletedAt          DateTime?
+  fieldClocks        Json         @default("{}")
+}
+
+model SyncLog {
+  id            String   @id @default(uuid())
+  deviceId      String
+  patientId     String?
+  lastPulledAt  DateTime?
+  lastPushedAt  DateTime?
+  conflictCount Int      @default(0)
+  createdAt     DateTime @default(now())
+}
+
+model MoodCheckIn {
+  id          String    @id @default(uuid())
+  patientId   String
+  patient     Patient   @relation(fields: [patientId], references: [id])
+  mood        Mood
+  note        String?
+  recordedAt  DateTime
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  fieldClocks Json      @default("{}")
+}
+
+model Alert {
+  id              String        @id @default(uuid())
+  patientId       String
+  patient         Patient       @relation(fields: [patientId], references: [id])
+  caregiverId     String
+  caregiver       Caregiver     @relation(fields: [caregiverId], references: [id])
+  type            AlertType
+  severity        AlertSeverity
+  message         String
+  createdAt       DateTime      @default(now())
+  acknowledgedAt  DateTime?
+}
+
+model DifficultyRecommendation {
+  id                     String   @id @default(uuid())
+  patientId              String
+  patient                Patient  @relation(fields: [patientId], references: [id])
+  gameType               GameType
+  recommendedDifficulty  Int
+  reason                 String
+  signals                Json
+  createdAt              DateTime @default(now())
+}

@@ -1,0 +1,58 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: cognigame
+      POSTGRES_PASSWORD: cognigame
+      POSTGRES_DB: cognigame
+    ports:
+      - "5432:5432"
+    volumes:
+      - cognigame_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cognigame"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://cognigame:cognigame@postgres:5432/cognigame
+      API_PORT: 3001
+      DEMO_AUTH: "true"
+      DEMO_JWT_SECRET: change-me-in-production-use-long-random
+      DIFFICULTY_SERVICE_URL: http://difficulty:8001
+      INTERNAL_SERVICE_KEY: dev-internal-key
+      CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+    ports:
+      - "3001:3001"
+
+  difficulty:
+    build:
+      context: ./apps/difficulty-service
+    environment:
+      DIFFICULTY_PORT: 8001
+      INTERNAL_SERVICE_KEY: dev-internal-key
+    ports:
+      - "8001:8001"
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: apps/dashboard/Dockerfile
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+      NEXT_PUBLIC_DEMO_AUTH: "true"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  cognigame_pg:
