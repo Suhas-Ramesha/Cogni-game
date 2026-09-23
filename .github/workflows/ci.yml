@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main, 'cursor/**']
+  pull_request:
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: cognigame
+          POSTGRES_PASSWORD: cognigame
+          POSTGRES_DB: cognigame
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pnpm install
+      - run: python3 -m venv apps/difficulty-service/.venv
+      - run: apps/difficulty-service/.venv/bin/pip install -r apps/difficulty-service/requirements.txt
+      - run: apps/difficulty-service/.venv/bin/pytest apps/difficulty-service/tests -q
+      - run: pnpm --filter @cognigame/game-engine test
+      - run: pnpm --filter @cognigame/mobile test
+      - name: Prisma + API tests
+        env:
+          DATABASE_URL: postgresql://cognigame:cognigame@127.0.0.1:5432/cognigame
+          DEMO_AUTH: 'true'
+          DEMO_JWT_SECRET: ci-secret
+        run: |
+          pnpm --filter @cognigame/api prisma:generate
+          pnpm --filter @cognigame/api exec prisma db push --accept-data-loss
+          pnpm --filter @cognigame/api test

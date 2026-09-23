@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "CogniGame NER",
+    "slug": "cognigame-ner",
+    "version": "0.9.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0F3D2E"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "in.cognigame.ner",
+      "infoPlist": {
+        "UIBackgroundModes": ["audio", "fetch", "remote-notification"]
+      }
+    },
+    "android": {
+      "package": "in.cognigame.ner",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#0F3D2E"
+      },
+      "permissions": ["RECORD_AUDIO", "VIBRATE", "RECEIVE_BOOT_COMPLETED", "SCHEDULE_EXACT_ALARM"]
+    },
+    "plugins": [
+      "expo-font",
+      "expo-av",
+      [
+        "expo-notifications",
+        {
+          "color": "#E0A100",
+          "sounds": []
+        }
+      ],
+      "expo-speech"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "replace-with-eas-project-id"
+      }
+    }
+  }
+}

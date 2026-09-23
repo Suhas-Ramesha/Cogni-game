@@ -1,0 +1,97 @@
+import { appSchema, tableSchema } from '@nozbe/watermelondb';
+
+/** Mirrors Prisma syncable tables. Keep in lockstep with apps/api/prisma/schema.prisma */
+export const schema = appSchema({
+  version: 1,
+  tables: [
+    tableSchema({
+      name: 'patients',
+      columns: [
+        { name: 'name', type: 'string' },
+        { name: 'preferred_language', type: 'string' },
+        { name: 'date_of_birth', type: 'number' },
+        { name: 'cognitive_baseline_score', type: 'number' },
+        { name: 'caregiver_id', type: 'string' },
+        { name: 'pairing_code', type: 'string' },
+        { name: 'current_difficulty', type: 'number' },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        { name: 'deleted_at', type: 'number', isOptional: true },
+        { name: 'field_clocks', type: 'string' },
+      ],
+    }),
+    tableSchema({
+      name: 'game_sessions',
+      columns: [
+        { name: 'patient_id', type: 'string', isIndexed: true },
+        { name: 'game_type', type: 'string' },
+        { name: 'difficulty_level', type: 'number' },
+        { name: 'score', type: 'number' },
+        { name: 'accuracy', type: 'number' },
+        { name: 'reaction_time_ms', type: 'number' },
+        { name: 'completed_at', type: 'number' },
+        { name: 'synced_at', type: 'number', isOptional: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        { name: 'deleted_at', type: 'number', isOptional: true },
+        { name: 'field_clocks', type: 'string' },
+        { name: 'metadata', type: 'string' },
+      ],
+    }),
+    tableSchema({
+      name: 'reminders',
+      columns: [
+        { name: 'patient_id', type: 'string', isIndexed: true },
+        { name: 'type', type: 'string' },
+        { name: 'title', type: 'string' },
+        { name: 'scheduled_time', type: 'number' },
+        { name: 'recurrence_rule', type: 'string', isOptional: true },
+        { name: 'status', type: 'string' },
+        { name: 'local_notification_id', type: 'string', isOptional: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        { name: 'deleted_at', type: 'number', isOptional: true },
+        { name: 'field_clocks', type: 'string' },
+      ],
+    }),
+    tableSchema({
+      name: 'cognitive_metrics',
+      columns: [
+        { name: 'patient_id', type: 'string', isIndexed: true },
+        { name: 'metric_type', type: 'string' },
+        { name: 'value', type: 'number' },
+        { name: 'recorded_at', type: 'number' },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        { name: 'deleted_at', type: 'number', isOptional: true },
+        { name: 'field_clocks', type: 'string' },
+      ],
+    }),
+    tableSchema({
+      name: 'game_content_packs',
+      columns: [
+        { name: 'language', type: 'string' },
+        { name: 'theme', type: 'string' },
+        { name: 'asset_bundle_version', type: 'string' },
+        { name: 'offline_available', type: 'boolean' },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        { name: 'deleted_at', type: 'number', isOptional: true },
+        { name: 'field_clocks', type: 'string' },
+      ],
+    }),
+    tableSchema({
+      name: 'mood_check_ins',
+      columns: [
+        { name: 'patient_id', type: 'string', isIndexed: true },
+        { name: 'mood', type: 'string' },
+        { name: 'note', type: 'string', isOptional: true },
+        { name: 'recorded_at', type: 'number' },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        { name: 'deleted_at', type: 'number', isOptional: true },
+        { name: 'field_clocks', type: 'string' },
+      ],
+    }),
+  ],
+});
