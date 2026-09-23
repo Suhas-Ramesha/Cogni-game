@@ -17,7 +17,7 @@ const LANGS = [
 
 export function PairScreen({ onPaired }: { onPaired: () => void }) {
   const language = useSession((s) => s.language);
-  const [code, setCode] = useState('482193');
+  const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -25,16 +25,7 @@ export function PairScreen({ onPaired }: { onPaired: () => void }) {
     setError(null);
     setBusy(true);
     try {
-      const auth = await fetch(`${API}/auth/demo`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ role: 'patient', pairingCode: code }),
-      });
-      if (!auth.ok) throw new Error('Pairing failed. Check the 6-digit code.');
-      const body = await auth.json();
-      useSession.getState().setAuth(body.token, body.patient.id);
-      useSession.getState().setLanguage(body.patient.preferredLanguage);
-      await fetch(`${API}/devices/pair`, {
+      const auth = await fetch(`${API}/auth/pair`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -43,6 +34,12 @@ export function PairScreen({ onPaired }: { onPaired: () => void }) {
           platform: 'expo',
         }),
       });
+      if (!auth.ok) throw new Error('Pairing failed. Check the 6-digit code.');
+      const body = await auth.json();
+      const difficulty = (body.patient?.currentDifficulty ?? 2) as 1 | 2 | 3 | 4 | 5;
+      useSession.getState().setAuth(body.token, body.patient.id, difficulty);
+      useSession.getState().setLanguage(body.patient.preferredLanguage);
+      useSession.getState().setOnline(true);
       await synchronizeIfOnline();
       onPaired();
     } catch (e) {
@@ -105,7 +102,7 @@ export function PairScreen({ onPaired }: { onPaired: () => void }) {
         onChangeText={(v) => setCode(v.replace(/\D/g, '').slice(0, 6))}
         keyboardType="number-pad"
         accessibilityLabel="Pairing code"
-        placeholder="482193"
+        placeholder="000000"
         maxLength={6}
         style={{
           marginTop: 16,
@@ -125,7 +122,7 @@ export function PairScreen({ onPaired }: { onPaired: () => void }) {
         </Text>
       ) : null}
       <BigButton
-        label={busy ? `${t(language, 'demoSignIn')}…` : t(language, 'demoSignIn')}
+        label={busy ? `${t(language, 'pairStart')}…` : t(language, 'pairStart')}
         onPress={pair}
         tone="accent"
         disabled={busy || code.replace(/\D/g, '').length !== 6}

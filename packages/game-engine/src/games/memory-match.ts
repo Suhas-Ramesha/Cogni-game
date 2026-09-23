@@ -9,6 +9,7 @@ import type {
 } from '@cognigame/shared-types';
 import { REGIONAL_ASSETS } from '../assets';
 import { recommendedDifficulty, scoreFromAccuracy } from '../difficulty-hooks';
+import { shuffle } from '../shuffle';
 
 function pairCount(d: DifficultyLevel): number {
   return d === 1 ? 2 : d === 2 ? 3 : d === 3 ? 4 : d === 4 ? 5 : 6;
@@ -18,10 +19,12 @@ export const memoryMatch: GameModule = {
   type: 'memory_match',
   buildRound(difficulty, language) {
     const n = pairCount(difficulty);
-    const tiles = REGIONAL_ASSETS.slice(0, n).flatMap((a, i) => [
-      { tileId: `${a.id}-a`, assetId: a.id, label: a.labels[language] },
-      { tileId: `${a.id}-b`, assetId: a.id, label: a.labels[language], pairOf: i },
-    ]);
+    const tiles = shuffle(
+      REGIONAL_ASSETS.slice(0, n).flatMap((a) => [
+        { tileId: `${a.id}-a`, assetId: a.id, label: a.labels[language] },
+        { tileId: `${a.id}-b`, assetId: a.id, label: a.labels[language] },
+      ]),
+    );
     return {
       id: `mm-${difficulty}-${n}`,
       gameType: 'memory_match',

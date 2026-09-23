@@ -12,7 +12,7 @@ Anjali Das (health worker, Guwahati) monitors two patients:
 ## 1. Caregiver dashboard (2 min)
 
 1. Open `http://localhost:3000`
-2. Click **Demo sign-in (Anjali Das)**
+2. Sign in with phone **`+916000000001`** (Anjali Das)
 3. Two patient cards. Bah shows open alerts.
 4. Open Rita — 14-day score chart, play heatmap, reminder table (mostly completed)
 5. Open Bah — critical performance-drop banner, missed Donepezil, stale last-synced

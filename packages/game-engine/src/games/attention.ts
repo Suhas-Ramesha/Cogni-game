@@ -1,6 +1,7 @@
 import type { DifficultyLevel, GameModule, GameResult } from '@cognigame/shared-types';
 import { REGIONAL_ASSETS } from '../assets';
 import { recommendedDifficulty, scoreFromAccuracy } from '../difficulty-hooks';
+import { shuffle } from '../shuffle';
 
 function optionCount(d: DifficultyLevel): number {
   return d <= 2 ? 3 : d === 3 ? 4 : 5;
@@ -13,10 +14,13 @@ export const attention: GameModule = {
     const pool = REGIONAL_ASSETS.slice(0, count);
     const odd = pool[pool.length - 1];
     const common = pool[0];
-    const options = Array.from({ length: count }, (_, i) => {
-      const item = i === count - 1 ? odd : common;
-      return { id: `${item.id}-${i}`, assetId: item.id, label: item.labels[language], odd: i === count - 1 };
-    });
+    const options = shuffle(
+      Array.from({ length: count }, (_, i) => {
+        const item = i === count - 1 ? odd : common;
+        return { id: `${item.id}-${i}`, assetId: item.id, label: item.labels[language], odd: i === count - 1 };
+      }),
+    );
+    const correct = options.find((o) => o.odd);
     return {
       id: `att-${difficulty}`,
       gameType: 'attention',
@@ -24,7 +28,7 @@ export const attention: GameModule = {
       language,
       promptKey: 'attention',
       narrationKey: 'attention',
-      payload: { options, correctId: options[count - 1].id },
+      payload: { options, correctId: correct?.id },
     };
   },
   score(input, round, timing): GameResult {

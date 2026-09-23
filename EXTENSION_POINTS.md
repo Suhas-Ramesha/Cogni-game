@@ -34,7 +34,7 @@ Vosk native module lands here. Do not change game screens to assume a cloud STT 
 
 ## 6. Auth providers
 
-`apps/api/src/auth/auth.service.ts` verifies Firebase ID tokens **or** demo JWT.
+`apps/api/src/auth/auth.service.ts` verifies Firebase ID tokens (`POST /auth/firebase`) or a registered caregiver phone (`POST /auth/phone`). Patients redeem a pairing code (`POST /auth/pair`). There is no demo login.
 
 A later IdP should implement the same `AuthPrincipal` (`role`, `caregiverId`, `patientId`).
 

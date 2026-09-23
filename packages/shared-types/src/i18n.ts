@@ -26,7 +26,7 @@ const en: Dictionary = {
   wellDone: 'Well done',
   tryAgain: 'Try again, slowly',
   pairPrompt: 'Ask your caregiver for the 6-digit code',
-  demoSignIn: 'Demo sign-in',
+  pairStart: 'Start',
 };
 
 const as: Dictionary = {
@@ -53,7 +53,7 @@ const as: Dictionary = {
   wellDone: 'বঢ়িয়া কাম',
   tryAgain: 'লাহে লাহে আকৌ চেষ্টা কৰক',
   pairPrompt: 'যত্নকাৰীৰ পৰা ৬ অংকৰ ক’ড লওক',
-  demoSignIn: 'ডেম’ প্ৰৱেশ',
+  pairStart: 'আৰম্ভ',
 };
 
 const kha: Dictionary = {
@@ -80,7 +80,7 @@ const kha: Dictionary = {
   wellDone: 'Bha shisha',
   tryAgain: 'Leh biang palat',
   pairPrompt: 'Pan 6 digit code na caregiver',
-  demoSignIn: 'Demo sign-in',
+  pairStart: 'Start',
 };
 
 const TABLES: Record<LanguageCode, Dictionary> = { en, as, kha };
