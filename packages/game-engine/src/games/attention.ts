@@ -17,7 +17,13 @@ export const attention: GameModule = {
     const options = shuffle(
       Array.from({ length: count }, (_, i) => {
         const item = i === count - 1 ? odd : common;
-        return { id: `${item.id}-${i}`, assetId: item.id, label: item.labels[language], odd: i === count - 1 };
+        return {
+          id: `${item.id}-${i}`,
+          assetId: item.id,
+          label: item.labels[language],
+          emoji: item.emoji,
+          odd: i === count - 1,
+        };
       }),
     );
     const correct = options.find((o) => o.odd);

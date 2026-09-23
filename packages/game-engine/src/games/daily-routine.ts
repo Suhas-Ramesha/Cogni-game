@@ -1,6 +1,7 @@
 import type { GameModule, GameResult } from '@cognigame/shared-types';
 import { ROUTINE_STEPS } from '../assets';
 import { recommendedDifficulty, scoreFromAccuracy } from '../difficulty-hooks';
+import { shuffle } from '../shuffle';
 
 export const dailyRoutine: GameModule = {
   type: 'daily_routine',
@@ -12,7 +13,7 @@ export const dailyRoutine: GameModule = {
       label: s.labels[language],
       asset: s.asset,
     }));
-    const shuffled = [...steps].sort((a, b) => a.id.localeCompare(b.id));
+    const shuffled = shuffle(steps);
     return {
       id: `dr-${difficulty}`,
       gameType: 'daily_routine',

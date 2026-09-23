@@ -5,6 +5,7 @@ export interface ThemedAsset {
   kind: 'food' | 'festival' | 'landmark' | 'routine' | 'shape' | 'sound';
   /** Bundled placeholder; swap files later without changing ids. */
   asset: string;
+  emoji: string;
   labels: Record<LanguageCode, string>;
 }
 
@@ -13,60 +14,70 @@ export const REGIONAL_ASSETS: ThemedAsset[] = [
     id: 'pitha',
     kind: 'food',
     asset: 'pitha',
+    emoji: '🥞',
     labels: { en: 'Pitha', as: 'পিঠা', kha: 'Pitha' },
   },
   {
     id: 'tenga',
     kind: 'food',
     asset: 'tenga',
+    emoji: '🍲',
     labels: { en: 'Masor tenga', as: 'মাছৰ টেঙা', kha: 'Doh doh khleh' },
   },
   {
     id: 'momo',
     kind: 'food',
     asset: 'momo',
+    emoji: '🥟',
     labels: { en: 'Momo', as: 'মমো', kha: 'Momo' },
   },
   {
     id: 'bamboo-shoot',
     kind: 'food',
     asset: 'bamboo',
+    emoji: '🎋',
     labels: { en: 'Bamboo shoot', as: 'বাঁহ গাজ', kha: 'Sohpdung' },
   },
   {
     id: 'bihu',
     kind: 'festival',
     asset: 'bihu',
+    emoji: '🥁',
     labels: { en: 'Bihu', as: 'বিহু', kha: 'Bihu' },
   },
   {
     id: 'hornbill',
     kind: 'festival',
     asset: 'hornbill',
+    emoji: '🐦',
     labels: { en: 'Hornbill festival', as: 'হৰ্ণবিল উৎসৱ', kha: 'Hornbill' },
   },
   {
     id: 'shad-suk-mynsiem',
     kind: 'festival',
     asset: 'dance',
+    emoji: '💃',
     labels: { en: 'Shad Suk Mynsiem', as: 'শাদ ছুক মিনচিয়েম', kha: 'Shad Suk Mynsiem' },
   },
   {
     id: 'kaziranga',
     kind: 'landmark',
     asset: 'rhino',
+    emoji: '🦏',
     labels: { en: 'Kaziranga', as: 'কাজিৰঙা', kha: 'Kaziranga' },
   },
   {
     id: 'living-root',
     kind: 'landmark',
     asset: 'bridge',
+    emoji: '🌉',
     labels: { en: 'Living root bridge', as: 'জীৱন্ত শিপাৰ দলং', kha: 'Jingkieng jri' },
   },
   {
     id: 'kamakhya',
     kind: 'landmark',
     asset: 'temple',
+    emoji: '🛕',
     labels: { en: 'Kamakhya', as: 'কামাখ্যা', kha: 'Kamakhya' },
   },
 ];
@@ -82,11 +93,11 @@ export const ROUTINE_STEPS = [
 ] as const;
 
 export const SHAPES = [
-  { id: 'circle', color: '#1F6F4A' },
-  { id: 'square', color: '#E0A100' },
-  { id: 'triangle', color: '#9B1D20' },
-  { id: 'diamond', color: '#0F3D2E' },
-  { id: 'star', color: '#4A3728' },
+  { id: 'circle', color: '#1F6F4A', glyph: '●', label: 'Circle' },
+  { id: 'square', color: '#8A5A00', glyph: '■', label: 'Square' },
+  { id: 'triangle', color: '#9B1D20', glyph: '▲', label: 'Triangle' },
+  { id: 'diamond', color: '#0F3D2E', glyph: '◆', label: 'Diamond' },
+  { id: 'star', color: '#4A3728', glyph: '★', label: 'Star' },
 ] as const;
 
 export const MOOD_CHOICES = [

@@ -8,7 +8,18 @@ import { useSession } from '../state/session';
 import { speak } from '../voice/tts';
 import { queueChange } from '../db/sync';
 
-type Tile = { tileId: string; assetId: string; label: string };
+type Tile = { tileId: string; assetId: string; label: string; emoji?: string };
+type Choice = { id: string; label?: string; emoji?: string; color?: string; glyph?: string };
+
+const ink = '#14110F';
+const forest = '#0F3D2E';
+const paper = '#FFFBFA';
+const bark = '#5C4A3A';
+const turmeric = '#E0A100';
+
+function sessionId() {
+  return `sess-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
 
 export function GameScreen({ type, onExit }: { type: GameType; onExit: () => void }) {
   const language = useSession((s) => s.language);
@@ -38,21 +49,28 @@ export function GameScreen({ type, onExit }: { type: GameType; onExit: () => voi
   function finish(raw: unknown) {
     if (done) return;
     const result = game.score({ raw }, round, { startedAtMs: started.current, finishedAtMs: Date.now() });
-    const row = {
-      id: crypto.randomUUID?.() ?? `sess-${Date.now()}`,
-      patient_id: useSession.getState().patientId,
-      game_type: result.gameType,
-      difficulty_level: result.difficultyLevel,
-      score: result.score,
-      accuracy: result.accuracy,
-      reaction_time_ms: result.reactionTimeMs,
-      completed_at: Date.now(),
-      field_clocks: JSON.stringify({ '*': Date.now() }),
-      created_at: Date.now(),
-      updated_at: Date.now(),
-      metadata: JSON.stringify(result.metadata ?? {}),
-    };
-    queueChange('game_sessions', row, 'created');
+    try {
+      queueChange(
+        'game_sessions',
+        {
+          id: sessionId(),
+          patient_id: useSession.getState().patientId,
+          game_type: result.gameType,
+          difficulty_level: result.difficultyLevel,
+          score: result.score,
+          accuracy: result.accuracy,
+          reaction_time_ms: result.reactionTimeMs,
+          completed_at: Date.now(),
+          field_clocks: JSON.stringify({ '*': Date.now() }),
+          created_at: Date.now(),
+          updated_at: Date.now(),
+          metadata: JSON.stringify(result.metadata ?? {}),
+        },
+        'created',
+      );
+    } catch {
+      // A failed local queue must not block the round result.
+    }
     const ok = result.gameType === 'emotional_engagement' || result.accuracy >= 0.5;
     setDone(ok ? t(language, 'wellDone') : t(language, 'tryAgain'));
     speak(language, ok ? 'wellDone' : 'tryAgain');
@@ -82,19 +100,20 @@ export function GameScreen({ type, onExit }: { type: GameType; onExit: () => voi
 
   return (
     <Screen>
-      <Text style={{ fontSize: 32, fontWeight: '700', color: '#0F3D2E', lineHeight: 40 }}>
+      <Text style={{ fontSize: 32, fontWeight: '700', color: forest, lineHeight: 40 }}>
         {t(language, round.promptKey)}
       </Text>
       <BigButton label={t(language, 'listen')} onPress={() => speak(language, round.narrationKey)} tone="ghost" />
 
       {type === 'memory_match' ? (
         <View>
-          <Text style={{ fontSize: 18, color: '#5C4A3A', marginBottom: 8 }}>
+          <Text style={{ fontSize: 20, color: bark, marginBottom: 12, fontWeight: '600' }}>
             {matches}/{pairs}
           </Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 }}>
             {tiles.map((tile) => {
-              const open = flipped.includes(tile.tileId) || lockedIds.includes(tile.tileId);
+              const matched = lockedIds.includes(tile.tileId);
+              const open = flipped.includes(tile.tileId) || matched;
               return (
                 <Pressable
                   key={tile.tileId}
@@ -103,27 +122,29 @@ export function GameScreen({ type, onExit }: { type: GameType; onExit: () => voi
                   disabled={busy || !!done}
                   onPress={() => flipTile(tile)}
                   style={({ pressed }) => ({
-                    width: '47%',
-                    minHeight: 96,
-                    backgroundColor: lockedIds.includes(tile.tileId) ? '#1F6F4A' : open ? '#FFFBFA' : '#0F3D2E',
+                    width: '48%',
+                    minHeight: 120,
+                    backgroundColor: matched ? '#1F6F4A' : open ? paper : forest,
                     borderRadius: 20,
                     alignItems: 'center',
                     justifyContent: 'center',
                     padding: 12,
                     opacity: pressed ? 0.88 : 1,
-                    borderWidth: open && !lockedIds.includes(tile.tileId) ? 2 : 0,
-                    borderColor: '#E0A100',
+                    borderWidth: 2,
+                    borderColor: open && !matched ? turmeric : 'transparent',
                   })}
                 >
+                  <Text style={{ fontSize: 36, lineHeight: 44 }}>{open ? tile.emoji ?? '★' : '?'}</Text>
                   <Text
                     style={{
-                      color: open && !lockedIds.includes(tile.tileId) ? '#0F3D2E' : '#FFFBFA',
-                      fontSize: 22,
+                      color: matched ? paper : open ? forest : paper,
+                      fontSize: 18,
                       fontWeight: '700',
                       textAlign: 'center',
+                      marginTop: 4,
                     }}
                   >
-                    {open ? tile.label : '•'}
+                    {open ? tile.label : ''}
                   </Text>
                 </Pressable>
               );
@@ -133,8 +154,8 @@ export function GameScreen({ type, onExit }: { type: GameType; onExit: () => voi
       ) : null}
 
       {type === 'attention' ? (
-        <View style={{ gap: 12, marginTop: 12 }}>
-          {((payload.options as { id: string; label?: string }[]) ?? []).map((opt) => (
+        <View style={{ gap: 12, marginTop: 8 }}>
+          {((payload.options as Choice[]) ?? []).map((opt) => (
             <Pressable
               key={opt.id}
               accessibilityRole="button"
@@ -142,70 +163,105 @@ export function GameScreen({ type, onExit }: { type: GameType; onExit: () => voi
               disabled={!!done}
               onPress={() => finish({ chosenId: opt.id })}
               style={({ pressed }) => ({
-                minHeight: 80,
+                minHeight: 88,
                 borderRadius: 20,
-                backgroundColor: '#0F3D2E',
+                backgroundColor: paper,
+                borderWidth: 2,
+                borderColor: '#E4EDE6',
+                flexDirection: 'row',
                 alignItems: 'center',
-                justifyContent: 'center',
-                paddingHorizontal: 16,
+                paddingHorizontal: 18,
+                gap: 14,
                 opacity: pressed ? 0.88 : 1,
               })}
             >
-              <Text style={{ color: '#FFFBFA', fontSize: 24, fontWeight: '700' }}>{opt.label ?? opt.id}</Text>
+              <Text style={{ fontSize: 36 }}>{opt.emoji ?? '•'}</Text>
+              <Text style={{ color: ink, fontSize: 24, fontWeight: '700', flex: 1 }}>{opt.label ?? opt.id}</Text>
             </Pressable>
           ))}
         </View>
       ) : null}
 
       {type === 'pattern_recognition' ? (
-        <View style={{ gap: 12, marginTop: 12 }}>
+        <View style={{ gap: 12, marginTop: 8 }}>
           <View
             style={{
-              minHeight: 72,
+              minHeight: 120,
               borderRadius: 20,
-              backgroundColor: String(payload.targetColor ?? '#1F6F4A'),
+              backgroundColor: paper,
+              borderWidth: 3,
+              borderColor: turmeric,
               alignItems: 'center',
               justifyContent: 'center',
+              padding: 16,
             }}
             accessibilityLabel={t(language, 'pattern')}
           >
-            <Text style={{ color: '#FFFBFA', fontSize: 22, fontWeight: '700' }}>{t(language, 'pattern')}</Text>
+            <Text style={{ fontSize: 56, color: String(payload.targetColor ?? forest), lineHeight: 64 }}>
+              {String(payload.targetGlyph ?? '●')}
+            </Text>
+            <Text style={{ color: ink, fontSize: 22, fontWeight: '700', marginTop: 4 }}>
+              {String(payload.targetLabel ?? t(language, 'pattern'))}
+            </Text>
           </View>
-          {((payload.options as { id: string; color?: string }[]) ?? []).map((opt) => (
+          {((payload.options as Choice[]) ?? []).map((opt) => (
             <Pressable
               key={opt.id}
               accessibilityRole="button"
-              accessibilityLabel={opt.id}
+              accessibilityLabel={opt.label ?? opt.id}
               disabled={!!done}
               onPress={() => finish({ chosenId: opt.id })}
               style={({ pressed }) => ({
-                minHeight: 80,
+                minHeight: 88,
                 borderRadius: 20,
-                backgroundColor: opt.color ?? '#0F3D2E',
+                backgroundColor: paper,
+                borderWidth: 2,
+                borderColor: '#E4EDE6',
+                flexDirection: 'row',
                 alignItems: 'center',
-                justifyContent: 'center',
+                paddingHorizontal: 18,
+                gap: 14,
                 opacity: pressed ? 0.88 : 1,
               })}
             >
-              <Text style={{ color: '#FFFBFA', fontSize: 22, fontWeight: '700', textTransform: 'capitalize' }}>
-                {opt.id}
-              </Text>
+              <Text style={{ fontSize: 36, color: opt.color ?? forest }}>{opt.glyph ?? '●'}</Text>
+              <Text style={{ color: ink, fontSize: 24, fontWeight: '700', flex: 1 }}>{opt.label ?? opt.id}</Text>
             </Pressable>
           ))}
         </View>
       ) : null}
 
       {type === 'daily_routine' ? (
-        <View style={{ gap: 10, marginTop: 12 }}>
-          <Text style={{ fontSize: 18, color: '#5C4A3A' }}>
+        <View style={{ gap: 10, marginTop: 8 }}>
+          <Text style={{ fontSize: 20, color: bark, fontWeight: '600' }}>
             {order.length}/{(payload.correctOrder as string[]).length}
           </Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {order.map((id, index) => {
+              const step = (payload.steps as { id: string; label: string }[]).find((s) => s.id === id);
+              return (
+                <View
+                  key={id}
+                  style={{
+                    backgroundColor: forest,
+                    borderRadius: 16,
+                    paddingHorizontal: 12,
+                    paddingVertical: 8,
+                  }}
+                >
+                  <Text style={{ color: paper, fontSize: 16, fontWeight: '700' }}>
+                    {index + 1}. {step?.label ?? id}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
           {(payload.steps as { id: string; label: string }[]).map((step) => {
             const used = order.includes(step.id);
             return (
               <BigButton
                 key={step.id}
-                label={used ? `${order.indexOf(step.id) + 1}. ${step.label}` : step.label}
+                label={step.label}
                 disabled={used || !!done}
                 onPress={() => {
                   const next = [...order, step.id];
@@ -219,9 +275,30 @@ export function GameScreen({ type, onExit }: { type: GameType; onExit: () => voi
       ) : null}
 
       {type === 'emotional_engagement' ? (
-        <View style={{ gap: 10, marginTop: 12 }}>
-          {(payload.choices as { id: string; label: string }[]).map((c) => (
-            <BigButton key={c.id} label={c.label} disabled={!!done} onPress={() => finish({ mood: c.id })} tone="accent" />
+        <View style={{ gap: 12, marginTop: 8 }}>
+          {(payload.choices as { id: string; label: string; emoji?: string }[]).map((c) => (
+            <Pressable
+              key={c.id}
+              accessibilityRole="button"
+              accessibilityLabel={c.label}
+              disabled={!!done}
+              onPress={() => finish({ mood: c.id })}
+              style={({ pressed }) => ({
+                minHeight: 88,
+                borderRadius: 20,
+                backgroundColor: paper,
+                borderWidth: 2,
+                borderColor: '#E4EDE6',
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingHorizontal: 18,
+                gap: 14,
+                opacity: pressed ? 0.88 : 1,
+              })}
+            >
+              <Text style={{ fontSize: 36 }}>{c.emoji ?? '•'}</Text>
+              <Text style={{ color: ink, fontSize: 24, fontWeight: '700', flex: 1 }}>{c.label}</Text>
+            </Pressable>
           ))}
         </View>
       ) : null}

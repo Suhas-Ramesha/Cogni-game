@@ -21,8 +21,8 @@ export const memoryMatch: GameModule = {
     const n = pairCount(difficulty);
     const tiles = shuffle(
       REGIONAL_ASSETS.slice(0, n).flatMap((a) => [
-        { tileId: `${a.id}-a`, assetId: a.id, label: a.labels[language] },
-        { tileId: `${a.id}-b`, assetId: a.id, label: a.labels[language] },
+        { tileId: `${a.id}-a`, assetId: a.id, label: a.labels[language], emoji: a.emoji },
+        { tileId: `${a.id}-b`, assetId: a.id, label: a.labels[language], emoji: a.emoji },
       ]),
     );
     return {

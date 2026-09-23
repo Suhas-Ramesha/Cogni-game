@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Text, TextInput, View, Pressable } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { t } from '@cognigame/shared-types';
@@ -20,6 +20,7 @@ export function PairScreen({ onPaired }: { onPaired: () => void }) {
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const codeInput = useRef<TextInput>(null);
 
   async function pair() {
     setError(null);
@@ -49,7 +50,7 @@ export function PairScreen({ onPaired }: { onPaired: () => void }) {
     }
   }
 
-  const digits = code.replace(/\D/g, '').slice(0, 6).padEnd(6, ' ');
+  const digits = code.replace(/\D/g, '').slice(0, 6);
 
   return (
     <Screen>
@@ -75,47 +76,48 @@ export function PairScreen({ onPaired }: { onPaired: () => void }) {
         {t(language, 'pairPrompt')}
       </Text>
 
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 28, gap: 8 }}>
-        {digits.split('').map((d, i) => (
-          <View
-            key={i}
-            style={{
-              flex: 1,
-              minHeight: 72,
-              borderRadius: 16,
-              backgroundColor: '#FFFBFA',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderWidth: 1,
-              borderColor: '#E4EDE6',
-            }}
-          >
-            <Text style={{ fontSize: 28, fontWeight: '700', color: '#0F3D2E', fontVariant: ['tabular-nums'] }}>
-              {d.trim()}
-            </Text>
-          </View>
-        ))}
-      </View>
-
-      <TextInput
-        value={code}
-        onChangeText={(v) => setCode(v.replace(/\D/g, '').slice(0, 6))}
-        keyboardType="number-pad"
+      <Pressable
+        accessibilityRole="button"
         accessibilityLabel="Pairing code"
-        placeholder="000000"
-        maxLength={6}
-        style={{
-          marginTop: 16,
-          minHeight: 72,
-          fontSize: 28,
-          letterSpacing: 10,
-          textAlign: 'center',
-          backgroundColor: '#FFFBFA',
-          borderRadius: 20,
-          color: '#14110F',
-          fontVariant: ['tabular-nums'],
-        }}
-      />
+        onPress={() => codeInput.current?.focus()}
+        style={{ marginTop: 28 }}
+      >
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          {Array.from({ length: 6 }, (_, i) => {
+            const digit = digits[i] ?? '';
+            const active = i === digits.length && digits.length < 6;
+            return (
+              <View
+                key={i}
+                style={{
+                  flex: 1,
+                  minHeight: 72,
+                  borderRadius: 16,
+                  backgroundColor: '#FFFBFA',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderWidth: 2,
+                  borderColor: active ? '#E0A100' : '#E4EDE6',
+                }}
+              >
+                <Text style={{ fontSize: 32, fontWeight: '700', color: digit ? '#0F3D2E' : '#C4B8A8' }}>
+                  {digit || '–'}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+        <TextInput
+          ref={codeInput}
+          value={digits}
+          onChangeText={(v) => setCode(v.replace(/\D/g, '').slice(0, 6))}
+          keyboardType="number-pad"
+          accessibilityLabel="Pairing code"
+          maxLength={6}
+          caretHidden
+          style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}
+        />
+      </Pressable>
       {error ? (
         <Text accessibilityRole="alert" style={{ color: '#9B1D20', fontSize: 20, marginTop: 12, lineHeight: 28 }}>
           {error}

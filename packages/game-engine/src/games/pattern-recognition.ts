@@ -8,10 +8,13 @@ export const patternRecognition: GameModule = {
   buildRound(difficulty, language) {
     const n = difficulty <= 2 ? 3 : difficulty === 3 ? 4 : 5;
     const target = SHAPES[difficulty % SHAPES.length];
+    const rest = SHAPES.filter((s) => s.id !== target.id).slice(0, n - 1);
     const options = shuffle(
-      SHAPES.slice(0, n).map((s) => ({
+      [target, ...rest].map((s) => ({
         id: s.id,
         color: s.color,
+        glyph: s.glyph,
+        label: s.label,
         isTarget: s.id === target.id,
       })),
     );
@@ -22,7 +25,13 @@ export const patternRecognition: GameModule = {
       language,
       promptKey: 'pattern',
       narrationKey: 'pattern',
-      payload: { targetId: target.id, targetColor: target.color, options },
+      payload: {
+        targetId: target.id,
+        targetColor: target.color,
+        targetGlyph: target.glyph,
+        targetLabel: target.label,
+        options,
+      },
     };
   },
   score(input, round, timing): GameResult {
