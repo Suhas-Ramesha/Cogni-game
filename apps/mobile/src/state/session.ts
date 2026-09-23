@@ -6,10 +6,11 @@ type Session = {
   patientId: string | null;
   deviceId: string;
   language: LanguageCode;
+  difficulty: 1 | 2 | 3 | 4 | 5;
   online: boolean;
   lastPulledAt: number | null;
   pendingChanges: SyncChanges;
-  setAuth: (token: string, patientId: string) => void;
+  setAuth: (token: string, patientId: string, difficulty?: 1 | 2 | 3 | 4 | 5) => void;
   setLanguage: (language: LanguageCode) => void;
   setOnline: (online: boolean) => void;
   setLastPulledAt: (n: number) => void;
@@ -26,10 +27,12 @@ export const useSession = create<Session>((set) => ({
   patientId: null,
   deviceId: deviceId(),
   language: 'as',
+  difficulty: 2,
   online: false,
   lastPulledAt: null,
   pendingChanges: {},
-  setAuth: (token, patientId) => set({ token, patientId }),
+  setAuth: (token, patientId, difficulty) =>
+    set({ token, patientId, ...(difficulty ? { difficulty } : {}) }),
   setLanguage: (language) => set({ language }),
   setOnline: (online) => set({ online }),
   setLastPulledAt: (lastPulledAt) => set({ lastPulledAt }),

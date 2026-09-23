@@ -3,12 +3,16 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Languages, Leaf, Phone, ShieldCheck, WifiOff } from 'lucide-react';
-import { api, DEMO } from '@/lib/api';
+import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
+import { api } from '@/lib/api';
+import { firebaseAuth, firebaseWebReady } from '@/lib/firebase';
 import type { AuthResponse } from '@cognigame/shared-types';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [phone, setPhone] = useState('+916000000001');
+  const [phone, setPhone] = useState('+91');
+  const [otp, setOtp] = useState('');
+  const [confirmation, setConfirmation] = useState<ConfirmationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -16,23 +20,64 @@ export default function LoginPage() {
     if (localStorage.getItem('cg_token')) router.replace('/patients');
   }, [router]);
 
-  async function demo(e: FormEvent) {
+  async function storeSession(res: AuthResponse) {
+    localStorage.setItem('cg_token', res.token);
+    localStorage.setItem('cg_caregiver', JSON.stringify(res.caregiver));
+    router.push('/patients');
+  }
+
+  async function signInWithPhone(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError(null);
     try {
-      const res = await api<AuthResponse>('/auth/demo', {
+      const res = await api<AuthResponse>('/auth/phone', {
         method: 'POST',
-        body: JSON.stringify({ role: 'caregiver', phone }),
+        body: JSON.stringify({ phone }),
       });
-      localStorage.setItem('cg_token', res.token);
-      localStorage.setItem('cg_caregiver', JSON.stringify(res.caregiver));
-      router.push('/patients');
+      await storeSession(res);
     } catch (err) {
       setError(
         (err as Error).message.replace(/[{}"]/g, ' ').trim() ||
-          'Could not sign in. Start the API (`pnpm dev:api`) and seed data, then try again.',
+          'Could not sign in. Check the phone number and that the API is running.',
       );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function sendOtp(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const auth = firebaseAuth();
+      if (!auth) throw new Error('Firebase is not configured. Add the web API key, auth domain, and project id.');
+      const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'invisible' });
+      const result = await signInWithPhoneNumber(auth, phone, verifier);
+      setConfirmation(result);
+    } catch (err) {
+      setError((err as Error).message || 'Could not send the SMS code.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function verifyOtp(e: FormEvent) {
+    e.preventDefault();
+    if (!confirmation) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const cred = await confirmation.confirm(otp);
+      const idToken = await cred.user.getIdToken();
+      const res = await api<AuthResponse>('/auth/firebase', {
+        method: 'POST',
+        body: JSON.stringify({ idToken }),
+      });
+      await storeSession(res);
+    } catch (err) {
+      setError((err as Error).message || 'That code was not accepted.');
     } finally {
       setBusy(false);
     }
@@ -69,23 +114,15 @@ export default function LoginPage() {
               Designed for Assamese, Khasi, and English households
             </li>
           </ul>
-          <div className="mt-10 flex flex-wrap gap-2" aria-label="Supported languages">
-            {['English', 'অসমীয়া', 'Khasi'].map((lang) => (
-              <span
-                key={lang}
-                className="rounded-pill border border-mist bg-paper px-3 py-1 text-xs font-semibold text-forest"
-              >
-                {lang}
-              </span>
-            ))}
-          </div>
         </section>
         <section className="rounded-card bg-paper p-8 shadow-card md:p-10">
           <h2 className="font-display text-2xl text-forest">Sign in</h2>
           <p className="mt-2 text-sm text-bark">
-            Production uses Firebase phone OTP. This demo opens Anjali Das’s seeded caseload.
+            {firebaseWebReady
+              ? 'We send a one-time code to your registered phone (Firebase Auth).'
+              : 'Use the phone number registered for your caseload. Add Firebase keys to enable SMS OTP.'}
           </p>
-          <form onSubmit={demo} className="mt-8 space-y-5">
+          <form onSubmit={firebaseWebReady ? (confirmation ? verifyOtp : sendOtp) : signInWithPhone} className="mt-8 space-y-5">
             <label className="block" htmlFor="phone">
               <span className="text-sm font-semibold text-forest">Phone</span>
               <span className="relative mt-2 flex">
@@ -104,28 +141,44 @@ export default function LoginPage() {
                 />
               </span>
             </label>
+            {firebaseWebReady && confirmation ? (
+              <label className="block" htmlFor="otp">
+                <span className="text-sm font-semibold text-forest">SMS code</span>
+                <input
+                  id="otp"
+                  className="mt-2 min-h-tap w-full rounded-2xl border border-mist bg-cream/60 px-4 text-lg tabular"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  autoComplete="one-time-code"
+                  name="otp"
+                  inputMode="numeric"
+                  spellCheck={false}
+                  placeholder="123456"
+                />
+              </label>
+            ) : null}
+            <div id="recaptcha-container" />
             {error ? (
               <p className="rounded-2xl bg-alert/10 px-4 py-3 text-sm text-alert" role="alert">
                 {error}
               </p>
             ) : null}
-            {DEMO ? (
-              <button
-                type="submit"
-                disabled={busy}
-                className="flex min-h-[56px] w-full cursor-pointer items-center justify-center rounded-2xl bg-turmeric text-lg font-semibold text-ink transition-transform duration-200 hover:-translate-y-0.5 disabled:opacity-70"
-              >
-                {busy ? 'Signing in…' : 'Demo sign-in (Anjali Das)'}
-              </button>
-            ) : (
-              <p className="text-alert" role="alert">
-                Demo auth is disabled. Configure Firebase OTP.
-              </p>
-            )}
+            <button
+              type="submit"
+              disabled={busy}
+              className="flex min-h-[56px] w-full cursor-pointer items-center justify-center rounded-2xl bg-turmeric text-lg font-semibold text-ink transition-transform duration-200 hover:-translate-y-0.5 disabled:opacity-70"
+            >
+              {busy
+                ? 'Signing in…'
+                : firebaseWebReady
+                  ? confirmation
+                    ? 'Verify code'
+                    : 'Send SMS code'
+                  : 'Sign in'}
+            </button>
           </form>
           <p className="mt-6 text-xs leading-relaxed text-bark">
-            Pair a patient tablet with code <span className="tabular font-semibold text-ink">482193</span> (Rita) or{' '}
-            <span className="tabular font-semibold text-ink">719204</span> (Bah).
+            Pair a patient tablet with the 6-digit code shown on each patient file.
           </p>
         </section>
       </div>

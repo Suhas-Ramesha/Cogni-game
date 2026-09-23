@@ -1,17 +1,20 @@
 import type { GameModule, GameResult } from '@cognigame/shared-types';
 import { SHAPES } from '../assets';
 import { recommendedDifficulty, scoreFromAccuracy } from '../difficulty-hooks';
+import { shuffle } from '../shuffle';
 
 export const patternRecognition: GameModule = {
   type: 'pattern_recognition',
   buildRound(difficulty, language) {
     const n = difficulty <= 2 ? 3 : difficulty === 3 ? 4 : 5;
     const target = SHAPES[difficulty % SHAPES.length];
-    const options = SHAPES.slice(0, n).map((s) => ({
-      id: s.id,
-      color: s.color,
-      isTarget: s.id === target.id,
-    }));
+    const options = shuffle(
+      SHAPES.slice(0, n).map((s) => ({
+        id: s.id,
+        color: s.color,
+        isTarget: s.id === target.id,
+      })),
+    );
     return {
       id: `pr-${difficulty}`,
       gameType: 'pattern_recognition',

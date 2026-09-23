@@ -67,7 +67,7 @@ Additive (needed for product, not speculative 10%):
 
 Firebase phone OTP is the production path (`firebase-admin` verifies ID tokens on the API).
 
-When `DEMO_AUTH=true` (SIH walkthrough / local), the API issues a signed demo JWT via `POST /auth/demo`. Both apps expose a clearly labeled **Demo sign-in** that never ships enabled in production EAS/Vercel builds (`EXPO_PUBLIC_DEMO_AUTH` / `NEXT_PUBLIC_DEMO_AUTH`).
+Caregivers sign in with their registered phone (`POST /auth/phone`). When Firebase web + Admin keys are set, the dashboard uses SMS OTP and `POST /auth/firebase`. Patients never manage accounts: they redeem a 6-digit pairing code (`POST /auth/pair`).
 
 Patient device binding: caregiver dashboard shows a 6-digit `pairingCode`; the patient app redeems it (elderly users should not manage accounts alone).
 

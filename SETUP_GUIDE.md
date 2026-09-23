@@ -45,11 +45,15 @@ DATABASE_URL=postgresql://cognigame_user:SECRET_PASSWORD@dpg-xxxxxx-a.oregon-pos
 API_PORT=3001
 API_PUBLIC_URL=http://localhost:3001
 NODE_ENV=development
-CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,http://localhost:8081,http://127.0.0.1:8081
 
-# Demo Auth Mode (SIH / Development)
-DEMO_AUTH=true
-DEMO_JWT_SECRET=super-secret-cognigame-jwt-dev-key
+# Session tokens
+JWT_SECRET=super-secret-cognigame-jwt-dev-key
+
+# Firebase Auth (optional — enables SMS OTP). Auth URL: https://<project-id>.firebaseapp.com
+FIREBASE_PROJECT_ID=
+FIREBASE_CLIENT_EMAIL=
+FIREBASE_PRIVATE_KEY=
 
 # Difficulty Microservice
 DIFFICULTY_SERVICE_URL=http://127.0.0.1:8001
@@ -61,8 +65,10 @@ Create `apps/dashboard/.env.local`:
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3001
-NEXT_PUBLIC_DEMO_AUTH=true
 DASHBOARD_PORT=3000
+NEXT_PUBLIC_FIREBASE_API_KEY=
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=
 ```
 
 ### 3. Patient Mobile App: `apps/mobile/.env`
@@ -72,7 +78,10 @@ Create `apps/mobile/.env`:
 # Use your computer's LAN IP if testing on a physical phone/tablet via Expo Go:
 # e.g., EXPO_PUBLIC_API_URL=http://192.168.1.10:3001
 EXPO_PUBLIC_API_URL=http://localhost:3001
-EXPO_PUBLIC_DEMO_AUTH=true
+# Optional — same Firebase web keys as the dashboard (SMS OTP is caregiver-only)
+EXPO_PUBLIC_FIREBASE_API_KEY=
+EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=
+EXPO_PUBLIC_FIREBASE_PROJECT_ID=
 ```
 
 ---
@@ -146,7 +155,7 @@ pnpm dev:api
 pnpm dev:dashboard
 ```
 - *Access:* Open [http://localhost:3000](http://localhost:3000)
-- Click **Demo sign-in (Anjali Das)** to explore patient tracking, metrics, and alerts.
+- Sign in with phone **`+916000000001`** (Anjali Das).
 
 ### Terminal 4: Patient Mobile App (Expo)
 ```powershell

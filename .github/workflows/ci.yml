@@ -42,8 +42,7 @@ jobs:
       - name: Prisma + API tests
         env:
           DATABASE_URL: postgresql://cognigame:cognigame@127.0.0.1:5432/cognigame
-          DEMO_AUTH: 'true'
-          DEMO_JWT_SECRET: ci-secret
+          JWT_SECRET: ci-secret
         run: |
           pnpm --filter @cognigame/api prisma:generate
           pnpm --filter @cognigame/api exec prisma db push --accept-data-loss

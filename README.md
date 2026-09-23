@@ -52,7 +52,7 @@ cp .env.example apps/dashboard/.env.local
 cp .env.example apps/mobile/.env
 ```
 
-The example file already matches local Postgres (`cognigame` / `cognigame`) and enables **demo auth**. Leave `DEMO_AUTH=true` for local/SIH. Never ship that flag in production.
+The example file matches local Postgres (`cognigame` / `cognigame`). Sign in on the dashboard with a **seeded caregiver phone**. Add Firebase keys to turn that into SMS OTP.
 
 ### 3. Database
 
@@ -89,7 +89,7 @@ pnpm dev:api           # NestJS   → http://localhost:3001/health
 pnpm dev:dashboard     # Next.js  → http://localhost:3000
 ```
 
-Open the dashboard at [http://localhost:3000](http://localhost:3000) and click **Demo sign-in (Anjali Das)**.
+Open the dashboard at [http://localhost:3000](http://localhost:3000). Sign in with phone **`+916000000001`** (Anjali Das).
 
 If the dashboard is opened as `http://127.0.0.1:3000`, that origin is already on the API CORS list.
 
@@ -108,9 +108,11 @@ Scan the QR code with Expo Go (same LAN). Pairing codes:
 
 On a physical device, set `EXPO_PUBLIC_API_URL` in `apps/mobile/.env` to your machine’s LAN IP, not `localhost` (for example `http://192.168.1.10:3001`).
 
+Expo web (patient UI in a browser): `pnpm --filter @cognigame/mobile web` → http://localhost:8081. Use pairing code `482193`.
+
 Full click-path for a live demo: [`docs/DEMO_SCRIPT.md`](./docs/DEMO_SCRIPT.md).
 
-## Seeded demo account
+## Seeded caregiver
 
 Caregiver **Anjali Das** · phone `+916000000001`
 
@@ -154,8 +156,9 @@ See [`.env.example`](./.env.example).
 
 | Flag | Meaning |
 |---|---|
-| `DEMO_AUTH=true` | SIH/local JWT. **Must be false in production.** |
-| `FIREBASE_*` / `NEXT_PUBLIC_FIREBASE_*` / `EXPO_PUBLIC_FIREBASE_*` | Phone OTP in production |
+| `JWT_SECRET` | Signs session tokens for API routes |
+| `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | Firebase Auth URL (`<project>.firebaseapp.com`) |
+| `FIREBASE_*` / `NEXT_PUBLIC_FIREBASE_*` / `EXPO_PUBLIC_FIREBASE_*` | SMS OTP when all three web keys + Admin SDK are set |
 | `INTERNAL_SERVICE_KEY` | NestJS ↔ FastAPI |
 | `NEXT_PUBLIC_API_URL` | Dashboard → API |
 | `EXPO_PUBLIC_API_URL` | Mobile → API |
@@ -176,11 +179,11 @@ See [`.env.example`](./.env.example).
 1. **Vosk on-device STT** is a stub (`apps/mobile/src/voice/README.md`). TTS works. Input uses large buttons.
 2. **Khasi TTS voice** is not available on most OS engines — Khasi text + English/Assamese voice.
 3. **WatermelonDB SQLiteAdapter** needs an EAS dev client. Expo Go uses LokiJSAdapter (same schema + sync protocol).
-4. **Firebase OTP** is implemented behind env vars; demo JWT is the SIH path.
+4. **Firebase OTP** is wired behind env vars (`NEXT_PUBLIC_FIREBASE_*` + Admin SDK). Without keys, caregivers use registered-phone `POST /auth/phone`. There is no demo login.
 5. Field-level LWW is implemented; smarter per-entity conflict resolution is a documented TODO.
 
 ## Production builds
 
 - Mobile: `eas build` (set `apps/mobile/eas.json` / `app.json` project id)
-- Dashboard: Vercel, root `apps/dashboard`, env `NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_DEMO_AUTH=false`
+- Dashboard: Vercel, root `apps/dashboard`, env `NEXT_PUBLIC_API_URL` and Firebase web keys
 - API + difficulty + Postgres: any container host; `docker-compose.yml` is the reference

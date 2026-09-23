@@ -1,18 +1,22 @@
 import { Body, Controller, Post, Inject } from '@nestjs/common';
-import { IsIn, IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 import { AuthService } from './auth.service';
 
-class DemoLoginDto {
-  @IsIn(['caregiver', 'patient'])
-  role: 'caregiver' | 'patient';
+class PhoneLoginDto {
+  @IsString()
+  phone: string;
+}
+
+class PairLoginDto {
+  @IsString()
+  pairingCode: string;
+
+  @IsString()
+  deviceId: string;
 
   @IsOptional()
   @IsString()
-  pairingCode?: string;
-
-  @IsOptional()
-  @IsString()
-  phone?: string;
+  platform?: string;
 }
 
 class FirebaseLoginDto {
@@ -24,14 +28,18 @@ class FirebaseLoginDto {
 export class AuthController {
   constructor(@Inject(AuthService) private readonly auth: AuthService) {}
 
-  @Post('demo')
-  demo(@Body() body: DemoLoginDto) {
-    return this.auth.demoLogin(body);
+  @Post('phone')
+  phone(@Body() body: PhoneLoginDto) {
+    return this.auth.phoneLogin(body.phone);
+  }
+
+  @Post('pair')
+  pair(@Body() body: PairLoginDto) {
+    return this.auth.pairLogin(body);
   }
 
   @Post('firebase')
-  async firebase(@Body() body: FirebaseLoginDto) {
-    const principal = await this.auth.verify(body.idToken);
-    return { token: this.auth.sign(principal), ...principal };
+  firebase(@Body() body: FirebaseLoginDto) {
+    return this.auth.firebaseLogin(body.idToken);
   }
 }

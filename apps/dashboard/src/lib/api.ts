@@ -1,5 +1,4 @@
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
-export const DEMO = process.env.NEXT_PUBLIC_DEMO_AUTH === 'true';
 
 export function token(): string | null {
   if (typeof window === 'undefined') return null;
