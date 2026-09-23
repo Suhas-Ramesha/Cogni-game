@@ -1,5 +1,4 @@
-import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import type { PushConflict, SyncChanges, TableChangeSet } from '@cognigame/shared-types';
 
@@ -18,7 +17,7 @@ type TableName = keyof typeof TABLE_MODELS;
 
 @Injectable()
 export class SyncService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   async pull(patientId: string, lastPulledAt: number | null, deviceId: string) {
     const since = lastPulledAt ? new Date(lastPulledAt) : new Date(0);

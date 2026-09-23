@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Patch, UseGuards, Inject } from '@nestjs/common';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user';
 import { AuthPrincipal } from '../auth/auth.service';
@@ -9,8 +9,8 @@ import { AlertsService } from './alerts.service';
 @UseGuards(AuthGuard)
 export class AlertsController {
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly alerts: AlertsService,
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(AlertsService) private readonly alerts: AlertsService,
   ) {}
 
   @Get()

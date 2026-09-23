@@ -1,4 +1,4 @@
-import { Controller, Param, Post, UseGuards } from '@nestjs/common';
+import { Controller, Param, Post, UseGuards, Inject } from '@nestjs/common';
 import { GameType } from '@prisma/client';
 import { AuthGuard } from '../auth/auth.guard';
 import { DifficultyService } from './difficulty.service';
@@ -6,7 +6,7 @@ import { DifficultyService } from './difficulty.service';
 @Controller('difficulty')
 @UseGuards(AuthGuard)
 export class DifficultyController {
-  constructor(private readonly difficulty: DifficultyService) {}
+  constructor(@Inject(DifficultyService) private readonly difficulty: DifficultyService) {}
 
   @Post(':patientId/:gameType')
   recommend(@Param('patientId') patientId: string, @Param('gameType') gameType: GameType) {

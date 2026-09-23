@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards, Inject } from '@nestjs/common';
 import { IsOptional, IsString } from 'class-validator';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user';
@@ -19,7 +19,7 @@ class PairDto {
 
 @Controller()
 export class PatientsController {
-  constructor(private readonly patients: PatientsService) {}
+  constructor(@Inject(PatientsService) private readonly patients: PatientsService) {}
 
   @UseGuards(AuthGuard)
   @Get('patients')

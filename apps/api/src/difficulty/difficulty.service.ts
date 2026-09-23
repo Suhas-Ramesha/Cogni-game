@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { GameType } from '@prisma/client';
 import type { DifficultyRecommendResponse, GameResult } from '@cognigame/shared-types';
@@ -7,7 +7,7 @@ import type { DifficultyRecommendResponse, GameResult } from '@cognigame/shared-
 export class DifficultyService {
   private readonly log = new Logger(DifficultyService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   async recommend(patientId: string, gameType: GameType): Promise<DifficultyRecommendResponse | null> {
     const patient = await this.prisma.patient.findUnique({ where: { id: patientId } });

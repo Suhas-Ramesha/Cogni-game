@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, UseGuards, Inject } from '@nestjs/common';
 import { IsOptional, IsString } from 'class-validator';
 import { ReminderStatus, ReminderType } from '@prisma/client';
 import { AuthGuard } from '../auth/auth.guard';
@@ -37,8 +37,8 @@ class PatchReminderDto {
 @UseGuards(AuthGuard)
 export class RemindersController {
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly alerts: AlertsService,
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(AlertsService) private readonly alerts: AlertsService,
   ) {}
 
   @Get(':patientId')

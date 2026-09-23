@@ -3,7 +3,7 @@
   "version": "0.9.0",
   "private": true,
   "scripts": {
-    "start:dev": "tsx watch src/main.ts",
+    "start:dev": "tsx watch --clear-screen=false src/main.ts",
     "start": "node dist/main.js",
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",

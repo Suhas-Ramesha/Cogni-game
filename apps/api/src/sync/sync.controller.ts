@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post, UseGuards, Inject } from '@nestjs/common';
 import { IsNumber, IsObject, IsOptional, IsString } from 'class-validator';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user';
@@ -36,7 +36,7 @@ class PushDto {
 @Controller('sync')
 @UseGuards(AuthGuard)
 export class SyncController {
-  constructor(private readonly sync: SyncService) {}
+  constructor(@Inject(SyncService) private readonly sync: SyncService) {}
 
   @Post('pull')
   pull(@Body() body: PullDto, @CurrentUser() user: AuthPrincipal) {

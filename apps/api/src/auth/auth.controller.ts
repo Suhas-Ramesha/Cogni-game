@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, Inject } from '@nestjs/common';
 import { IsIn, IsOptional, IsString } from 'class-validator';
 import { AuthService } from './auth.service';
 
@@ -22,7 +22,7 @@ class FirebaseLoginDto {
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly auth: AuthService) {}
+  constructor(@Inject(AuthService) private readonly auth: AuthService) {}
 
   @Post('demo')
   demo(@Body() body: DemoLoginDto) {

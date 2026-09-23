@@ -5,7 +5,7 @@ import { LiveGateway } from '../live/live.gateway';
 @Injectable()
 export class AlertsService {
   constructor(
-    private readonly prisma: PrismaService,
+    @Inject(PrismaService) private readonly prisma: PrismaService,
     @Optional() @Inject(forwardRef(() => LiveGateway)) private readonly live?: LiveGateway,
   ) {}
 

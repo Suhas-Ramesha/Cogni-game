@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards, Inject } from '@nestjs/common';
 import { IsNumber, IsObject, IsOptional, IsString } from 'class-validator';
 import { AuthGuard } from '../auth/auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
@@ -38,9 +38,9 @@ class CreateSessionDto {
 @UseGuards(AuthGuard)
 export class SessionsController {
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly alerts: AlertsService,
-    private readonly difficulty: DifficultyService,
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(AlertsService) private readonly alerts: AlertsService,
+    @Inject(DifficultyService) private readonly difficulty: DifficultyService,
   ) {}
 
   @Get(':patientId')
