@@ -5,7 +5,6 @@ import { t, type GameType } from '@cognigame/shared-types';
 import { BigButton } from '../ui/BigButton';
 import { Screen } from '../ui/Screen';
 import { useSession } from '../state/session';
-import { speak } from '../voice/tts';
 
 type FeatherName = ComponentProps<typeof Feather>['name'];
 
@@ -26,6 +25,10 @@ export function HomeScreen({
 }) {
   const language = useSession((s) => s.language);
   const online = useSession((s) => s.online);
+  const syncing = useSession((s) => s.syncing);
+  const statusKey = syncing ? 'syncing' : online ? 'online' : 'offline';
+  const statusColor = syncing ? '#8A5A00' : online ? '#1F6F4A' : '#9B1D20';
+  const statusBg = syncing ? '#F7E3B0' : online ? '#E4EDE6' : '#F8D7D8';
 
   return (
     <Screen>
@@ -35,21 +38,20 @@ export function HomeScreen({
           flexDirection: 'row',
           alignItems: 'center',
           gap: 8,
-          backgroundColor: online ? '#E4EDE6' : '#F8D7D8',
+          backgroundColor: statusBg,
           paddingHorizontal: 14,
           paddingVertical: 10,
           borderRadius: 999,
         }}
       >
-        <Feather name={online ? 'wifi' : 'wifi-off'} size={18} color={online ? '#1F6F4A' : '#9B1D20'} />
-        <Text style={{ fontSize: 18, color: online ? '#1F6F4A' : '#9B1D20', fontWeight: '600' }}>
-          {t(language, online ? 'online' : 'offline')}
+        <Feather name={syncing ? 'refresh-cw' : online ? 'wifi' : 'wifi-off'} size={18} color={statusColor} />
+        <Text style={{ fontSize: 18, color: statusColor, fontWeight: '600' }}>
+          {t(language, statusKey)}
         </Text>
       </View>
       <Text style={{ fontSize: 36, fontWeight: '700', color: '#0F3D2E', marginVertical: 16 }}>
         {t(language, 'hello')}
       </Text>
-      <BigButton label={t(language, 'listen')} onPress={() => speak(language, 'play')} tone="ghost" />
 
       {GAMES.map((g) => (
         <Pressable

@@ -1,6 +1,7 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useState } from 'react';
+import { Appearance, Text, TextInput } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import type { GameType } from '@cognigame/shared-types';
@@ -9,7 +10,6 @@ import { HomeScreen } from './src/screens/HomeScreen';
 import { GameScreen } from './src/screens/GameScreen';
 import { RemindersScreen } from './src/screens/RemindersScreen';
 import { ErrorBoundary } from './src/ui/ErrorBoundary';
-import './global.css';
 
 export type RootStack = {
   Pair: undefined;
@@ -19,6 +19,14 @@ export type RootStack = {
 };
 
 const Stack = createNativeStackNavigator<RootStack>();
+
+Appearance.setColorScheme('light');
+
+type WithDefaults = { defaultProps?: { style?: object } };
+const ink = { color: '#14110F' };
+for (const Component of [Text, TextInput] as WithDefaults[]) {
+  Component.defaultProps = { ...Component.defaultProps, style: [ink, Component.defaultProps?.style] };
+}
 
 export default function App() {
   const [paired, setPaired] = useState(false);

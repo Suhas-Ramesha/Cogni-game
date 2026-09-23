@@ -1,11 +1,10 @@
 import { useRef, useState } from 'react';
-import { Text, TextInput, View, Pressable } from 'react-native';
+import { Keyboard, Text, TextInput, View, Pressable } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { t } from '@cognigame/shared-types';
 import { BigButton } from '../ui/BigButton';
 import { Screen } from '../ui/Screen';
 import { useSession } from '../state/session';
-import { speak } from '../voice/tts';
 import { synchronizeIfOnline } from '../db/sync';
 
 const API = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3001';
@@ -23,6 +22,7 @@ export function PairScreen({ onPaired }: { onPaired: () => void }) {
   const codeInput = useRef<TextInput>(null);
 
   async function pair() {
+    Keyboard.dismiss();
     setError(null);
     setBusy(true);
     try {
@@ -39,9 +39,12 @@ export function PairScreen({ onPaired }: { onPaired: () => void }) {
       const body = await auth.json();
       const difficulty = (body.patient?.currentDifficulty ?? 2) as 1 | 2 | 3 | 4 | 5;
       useSession.getState().setAuth(body.token, body.patient.id, difficulty);
-      useSession.getState().setLanguage(body.patient.preferredLanguage);
-      useSession.getState().setOnline(true);
-      await synchronizeIfOnline();
+      useSession.getState().setSyncing(true);
+      try {
+        await synchronizeIfOnline();
+      } finally {
+        useSession.getState().setSyncing(false);
+      }
       onPaired();
     } catch (e) {
       setError((e as Error).message);
@@ -52,8 +55,19 @@ export function PairScreen({ onPaired }: { onPaired: () => void }) {
 
   const digits = code.replace(/\D/g, '').slice(0, 6);
 
+  const ready = digits.length === 6;
+
   return (
-    <Screen>
+    <Screen
+      footer={
+        <BigButton
+          label={busy ? `${t(language, 'pairStart')}…` : t(language, 'pairStart')}
+          onPress={pair}
+          tone="accent"
+          disabled={busy || !ready}
+        />
+      }
+    >
       <View
         style={{
           alignSelf: 'flex-start',
@@ -72,7 +86,33 @@ export function PairScreen({ onPaired }: { onPaired: () => void }) {
       <Text style={{ fontSize: 40, fontWeight: '700', color: '#0F3D2E', marginTop: 20 }}>
         {t(language, 'appName')}
       </Text>
-      <Text style={{ fontSize: 24, marginTop: 12, color: '#5C4A3A', lineHeight: 32 }}>
+      <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>
+        {LANGS.map((lang) => {
+          const active = language === lang.id;
+          return (
+            <Pressable
+              key={lang.id}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={lang.label}
+              onPress={() => useSession.getState().setLanguage(lang.id)}
+              style={{
+                flex: 1,
+                minHeight: 64,
+                borderRadius: 20,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: active ? '#0F3D2E' : '#FFFBFA',
+              }}
+            >
+              <Text style={{ fontSize: 16, fontWeight: '700', color: active ? '#FFFBFA' : '#0F3D2E' }}>
+                {lang.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      <Text style={{ fontSize: 24, marginTop: 20, color: '#5C4A3A', lineHeight: 32 }}>
         {t(language, 'pairPrompt')}
       </Text>
 
@@ -123,40 +163,6 @@ export function PairScreen({ onPaired }: { onPaired: () => void }) {
           {error}
         </Text>
       ) : null}
-      <BigButton
-        label={busy ? `${t(language, 'pairStart')}…` : t(language, 'pairStart')}
-        onPress={pair}
-        tone="accent"
-        disabled={busy || code.replace(/\D/g, '').length !== 6}
-      />
-      <BigButton label={t(language, 'listen')} onPress={() => speak(language, 'pairPrompt')} tone="ghost" />
-
-      <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>
-        {LANGS.map((lang) => {
-          const active = language === lang.id;
-          return (
-            <Pressable
-              key={lang.id}
-              accessibilityRole="button"
-              accessibilityState={{ selected: active }}
-              accessibilityLabel={lang.label}
-              onPress={() => useSession.getState().setLanguage(lang.id)}
-              style={{
-                flex: 1,
-                minHeight: 64,
-                borderRadius: 20,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: active ? '#0F3D2E' : '#FFFBFA',
-              }}
-            >
-              <Text style={{ fontSize: 16, fontWeight: '700', color: active ? '#FFFBFA' : '#0F3D2E' }}>
-                {lang.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
     </Screen>
   );
 }

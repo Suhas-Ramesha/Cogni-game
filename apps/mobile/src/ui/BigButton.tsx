@@ -41,7 +41,17 @@ export function BigButton({
         opacity: disabled ? 0.55 : pressed ? 0.88 : 1,
       })}
     >
-      <Text style={{ color: colors.fg, fontSize: compact ? 20 : 24, fontWeight: '700' }}>{label}</Text>
+      <Text
+        style={{
+          color: colors.fg,
+          fontSize: compact ? 20 : 24,
+          fontWeight: '700',
+          textAlign: 'center',
+          lineHeight: compact ? 26 : 32,
+        }}
+      >
+        {label}
+      </Text>
     </Pressable>
   );
 }

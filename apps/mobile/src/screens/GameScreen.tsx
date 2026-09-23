@@ -25,7 +25,11 @@ export function GameScreen({ type, onExit }: { type: GameType; onExit: () => voi
   const language = useSession((s) => s.language);
   const difficulty = useSession((s) => s.difficulty);
   const game = getGame(type);
-  const round = useMemo(() => game.buildRound(difficulty, language), [game, language, difficulty]);
+  const [roundNonce, setRoundNonce] = useState(0);
+  const round = useMemo(
+    () => game.buildRound(difficulty, language),
+    [game, language, difficulty, roundNonce],
+  );
   const started = useRef(Date.now());
   const [matches, setMatches] = useState(0);
   const [flipped, setFlipped] = useState<string[]>([]);
@@ -33,6 +37,7 @@ export function GameScreen({ type, onExit }: { type: GameType; onExit: () => voi
   const [busy, setBusy] = useState(false);
   const [order, setOrder] = useState<string[]>([]);
   const [done, setDone] = useState<string | null>(null);
+  const [passed, setPassed] = useState<boolean | null>(null);
 
   const payload = round.payload as Record<string, unknown>;
   const tiles = (payload.tiles as Tile[] | undefined) ?? [];
@@ -72,8 +77,21 @@ export function GameScreen({ type, onExit }: { type: GameType; onExit: () => voi
       // A failed local queue must not block the round result.
     }
     const ok = result.gameType === 'emotional_engagement' || result.accuracy >= 0.5;
+    setPassed(ok);
     setDone(ok ? t(language, 'wellDone') : t(language, 'tryAgain'));
     speak(language, ok ? 'wellDone' : 'tryAgain');
+  }
+
+  function playAgain() {
+    started.current = Date.now();
+    setMatches(0);
+    setFlipped([]);
+    setLockedIds([]);
+    setBusy(false);
+    setOrder([]);
+    setDone(null);
+    setPassed(null);
+    setRoundNonce((n) => n + 1);
   }
 
   function flipTile(tile: Tile) {
@@ -100,10 +118,9 @@ export function GameScreen({ type, onExit }: { type: GameType; onExit: () => voi
 
   return (
     <Screen>
-      <Text style={{ fontSize: 32, fontWeight: '700', color: forest, lineHeight: 40 }}>
+      <Text style={{ fontSize: 32, fontWeight: '700', color: forest, lineHeight: 40, marginBottom: 16 }}>
         {t(language, round.promptKey)}
       </Text>
-      <BigButton label={t(language, 'listen')} onPress={() => speak(language, round.narrationKey)} tone="ghost" />
 
       {type === 'memory_match' ? (
         <View>
@@ -134,7 +151,9 @@ export function GameScreen({ type, onExit }: { type: GameType; onExit: () => voi
                     borderColor: open && !matched ? turmeric : 'transparent',
                   })}
                 >
-                  <Text style={{ fontSize: 36, lineHeight: 44 }}>{open ? tile.emoji ?? '★' : '?'}</Text>
+                  <Text style={{ fontSize: 36, lineHeight: 44, color: open && !matched ? ink : paper }}>
+                    {open ? tile.emoji ?? '★' : '?'}
+                  </Text>
                   <Text
                     style={{
                       color: matched ? paper : open ? forest : paper,
@@ -175,7 +194,7 @@ export function GameScreen({ type, onExit }: { type: GameType; onExit: () => voi
                 opacity: pressed ? 0.88 : 1,
               })}
             >
-              <Text style={{ fontSize: 36 }}>{opt.emoji ?? '•'}</Text>
+              <Text style={{ fontSize: 36, color: ink }}>{opt.emoji ?? '•'}</Text>
               <Text style={{ color: ink, fontSize: 24, fontWeight: '700', flex: 1 }}>{opt.label ?? opt.id}</Text>
             </Pressable>
           ))}
@@ -236,20 +255,22 @@ export function GameScreen({ type, onExit }: { type: GameType; onExit: () => voi
           <Text style={{ fontSize: 20, color: bark, fontWeight: '600' }}>
             {order.length}/{(payload.correctOrder as string[]).length}
           </Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          <View style={{ gap: 8 }}>
             {order.map((id, index) => {
               const step = (payload.steps as { id: string; label: string }[]).find((s) => s.id === id);
               return (
                 <View
                   key={id}
                   style={{
-                    backgroundColor: forest,
+                    backgroundColor: paper,
                     borderRadius: 16,
-                    paddingHorizontal: 12,
-                    paddingVertical: 8,
+                    paddingHorizontal: 16,
+                    paddingVertical: 14,
+                    borderWidth: 2,
+                    borderColor: '#E4EDE6',
                   }}
                 >
-                  <Text style={{ color: paper, fontSize: 16, fontWeight: '700' }}>
+                  <Text style={{ color: ink, fontSize: 22, fontWeight: '700' }}>
                     {index + 1}. {step?.label ?? id}
                   </Text>
                 </View>
@@ -296,7 +317,7 @@ export function GameScreen({ type, onExit }: { type: GameType; onExit: () => voi
                 opacity: pressed ? 0.88 : 1,
               })}
             >
-              <Text style={{ fontSize: 36 }}>{c.emoji ?? '•'}</Text>
+              <Text style={{ fontSize: 36, color: ink }}>{c.emoji ?? '•'}</Text>
               <Text style={{ color: ink, fontSize: 24, fontWeight: '700', flex: 1 }}>{c.label}</Text>
             </Pressable>
           ))}
@@ -304,7 +325,12 @@ export function GameScreen({ type, onExit }: { type: GameType; onExit: () => voi
       ) : null}
 
       {done ? (
-        <Text style={{ fontSize: 28, marginTop: 24, color: '#1F6F4A', fontWeight: '700' }}>{done}</Text>
+        <View style={{ marginTop: 20, gap: 8 }}>
+          <Text style={{ fontSize: 28, color: passed ? '#1F6F4A' : '#9B1D20', fontWeight: '700' }}>{done}</Text>
+          {passed === false ? (
+            <BigButton label={t(language, 'retry')} onPress={playAgain} tone="accent" />
+          ) : null}
+        </View>
       ) : null}
       <BigButton label={t(language, 'done')} onPress={onExit} tone="ghost" />
     </Screen>

@@ -89,7 +89,6 @@ export function RemindersScreen({ onBack }: { onBack: () => void }) {
           </View>
         );
       })}
-      <BigButton label={t(language, 'listen')} onPress={() => speak(language, 'reminders')} tone="ghost" />
       <BigButton label={t(language, 'done')} onPress={onBack} tone="ghost" />
     </Screen>
   );
