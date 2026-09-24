@@ -137,7 +137,7 @@ export default function LoginPage() {
                   type="tel"
                   inputMode="tel"
                   spellCheck={false}
-                  placeholder="+91 60000 00001…"
+                  placeholder="+91"
                 />
               </span>
             </label>

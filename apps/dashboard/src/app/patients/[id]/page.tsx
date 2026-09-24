@@ -35,6 +35,11 @@ export default function PatientDetailPage() {
 
   useEffect(() => {
     load().catch((e) => setError((e as Error).message));
+    const onLive = () => {
+      load().catch((e) => setError((e as Error).message));
+    };
+    window.addEventListener('cg-live', onLive);
+    return () => window.removeEventListener('cg-live', onLive);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
 

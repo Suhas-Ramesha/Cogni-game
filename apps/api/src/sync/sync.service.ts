@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { LiveGateway } from '../live/live.gateway';
 import type { PushConflict, SyncChanges, TableChangeSet } from '@cognigame/shared-types';
 
 type Clocked = { fieldClocks?: Record<string, number> };
@@ -17,7 +18,10 @@ type TableName = keyof typeof TABLE_MODELS;
 
 @Injectable()
 export class SyncService {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(LiveGateway) private readonly live: LiveGateway,
+  ) {}
 
   async pull(patientId: string, lastPulledAt: number | null, deviceId: string) {
     const since = lastPulledAt ? new Date(lastPulledAt) : new Date(0);
@@ -54,7 +58,13 @@ export class SyncService {
     };
   }
 
-  async push(patientId: string, deviceId: string, changes: SyncChanges, lastPulledAt: number | null) {
+  async push(
+    patientId: string,
+    deviceId: string,
+    changes: SyncChanges,
+    lastPulledAt: number | null,
+    caregiverId?: string,
+  ) {
     const conflicts: PushConflict[] = [];
     for (const table of Object.keys(TABLE_MODELS) as TableName[]) {
       const set = changes[table];
@@ -82,6 +92,15 @@ export class SyncService {
         conflictCount: conflicts.length,
       },
     });
+    const owner =
+      caregiverId ??
+      (
+        await this.prisma.patient.findUnique({
+          where: { id: patientId },
+          select: { caregiverId: true },
+        })
+      )?.caregiverId;
+    if (owner) this.live.emitSync(owner, { patientId, deviceId, timestamp });
     return { timestamp, conflictCount: conflicts.length, conflicts };
   }
 
@@ -106,17 +125,18 @@ export class SyncService {
     const client = (this.prisma as unknown as Record<string, { findUnique: Function; upsert: Function; update: Function }>)[model];
     const conflicts: PushConflict[] = [];
     const applyRow = async (row: Record<string, unknown>, kind: 'created' | 'updated') => {
-      const id = String(row.id);
+      const clean = this.sanitize(table, row, patientId);
+      const id = String(clean.id ?? row.id);
       const existing = await client.findUnique({ where: { id } });
       if (!existing) {
         await client.upsert({
           where: { id },
-          create: this.sanitize(table, row, patientId),
-          update: this.sanitize(table, row, patientId),
+          create: { ...clean, id },
+          update: { ...clean, id },
         });
         return;
       }
-      const merged = this.mergeFields(existing, row);
+      const merged = this.mergeFields(existing, { ...clean, id });
       if (merged.conflicted.length) {
         conflicts.push({
           table,
@@ -163,14 +183,90 @@ export class SyncService {
   }
 
   private sanitize(table: TableName, row: Record<string, unknown>, patientId: string) {
-    const copy = { ...row };
-    if (table !== 'game_content_packs' && table !== 'patients') copy.patientId = patientId;
-    if (copy.completedAt) copy.completedAt = new Date(String(copy.completedAt));
-    if (copy.scheduledTime) copy.scheduledTime = new Date(String(copy.scheduledTime));
-    if (copy.recordedAt) copy.recordedAt = new Date(String(copy.recordedAt));
-    if (copy.dateOfBirth) copy.dateOfBirth = new Date(String(copy.dateOfBirth));
-    if (copy.updatedAt) copy.updatedAt = new Date(String(copy.updatedAt));
-    if (copy.createdAt) copy.createdAt = new Date(String(copy.createdAt));
-    return copy;
+    const mapped: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(row)) {
+      mapped[CAMEL[key] ?? key] = value;
+    }
+    for (const field of JSON_FIELDS) {
+      if (typeof mapped[field] === 'string') {
+        try {
+          mapped[field] = JSON.parse(String(mapped[field]));
+        } catch {
+          mapped[field] = {};
+        }
+      }
+    }
+    for (const field of DATE_FIELDS) {
+      const value = mapped[field];
+      if (typeof value === 'number') mapped[field] = new Date(value);
+      else if (typeof value === 'string' && value) mapped[field] = new Date(value);
+    }
+    for (const field of INT_FIELDS) {
+      if (mapped[field] != null && mapped[field] !== '') mapped[field] = Math.round(Number(mapped[field]));
+    }
+    for (const field of FLOAT_FIELDS) {
+      if (mapped[field] != null && mapped[field] !== '') mapped[field] = Number(mapped[field]);
+    }
+    if (table !== 'game_content_packs' && table !== 'patients') mapped.patientId = patientId;
+    const allowed = ALLOWED[table];
+    const out: Record<string, unknown> = {};
+    for (const key of allowed) {
+      if (mapped[key] !== undefined) out[key] = mapped[key];
+    }
+    return out;
   }
 }
+
+const CAMEL: Record<string, string> = {
+  patient_id: 'patientId',
+  game_type: 'gameType',
+  difficulty_level: 'difficultyLevel',
+  reaction_time_ms: 'reactionTimeMs',
+  completed_at: 'completedAt',
+  field_clocks: 'fieldClocks',
+  created_at: 'createdAt',
+  updated_at: 'updatedAt',
+  scheduled_time: 'scheduledTime',
+  recurrence_rule: 'recurrenceRule',
+  local_notification_id: 'localNotificationId',
+  recorded_at: 'recordedAt',
+  metric_type: 'metricType',
+  preferred_language: 'preferredLanguage',
+  date_of_birth: 'dateOfBirth',
+  deleted_at: 'deletedAt',
+};
+
+const DATE_FIELDS = ['completedAt', 'scheduledTime', 'recordedAt', 'dateOfBirth', 'updatedAt', 'createdAt', 'deletedAt'];
+const JSON_FIELDS = ['fieldClocks', 'metadata'];
+const INT_FIELDS = ['difficultyLevel', 'reactionTimeMs'];
+const FLOAT_FIELDS = ['score', 'accuracy', 'value'];
+
+const ALLOWED: Record<TableName, string[]> = {
+  patients: ['id', 'name', 'preferredLanguage', 'fieldClocks'],
+  game_sessions: [
+    'id',
+    'patientId',
+    'gameType',
+    'difficultyLevel',
+    'score',
+    'accuracy',
+    'reactionTimeMs',
+    'completedAt',
+    'fieldClocks',
+    'metadata',
+  ],
+  reminders: [
+    'id',
+    'patientId',
+    'type',
+    'title',
+    'scheduledTime',
+    'recurrenceRule',
+    'status',
+    'localNotificationId',
+    'fieldClocks',
+  ],
+  cognitive_metrics: ['id', 'patientId', 'metricType', 'value', 'recordedAt', 'fieldClocks'],
+  game_content_packs: ['id', 'language', 'theme', 'assetBundleVersion', 'offlineAvailable', 'fieldClocks'],
+  mood_check_ins: ['id', 'patientId', 'mood', 'note', 'recordedAt', 'fieldClocks'],
+};

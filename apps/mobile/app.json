@@ -16,7 +16,11 @@
       "supportsTablet": true,
       "bundleIdentifier": "in.cognigame.ner",
       "infoPlist": {
-        "UIBackgroundModes": ["audio", "fetch", "remote-notification"]
+        "UIBackgroundModes": [
+          "audio",
+          "fetch",
+          "remote-notification"
+        ]
       }
     },
     "android": {
@@ -26,9 +30,15 @@
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#0F3D2E"
       },
-      "permissions": ["RECORD_AUDIO", "VIBRATE", "RECEIVE_BOOT_COMPLETED", "SCHEDULE_EXACT_ALARM"]
+      "permissions": [
+        "RECORD_AUDIO",
+        "VIBRATE",
+        "RECEIVE_BOOT_COMPLETED",
+        "SCHEDULE_EXACT_ALARM"
+      ]
     },
     "plugins": [
+      "expo-dev-client",
       [
         "expo-notifications",
         {
@@ -44,8 +54,9 @@
     },
     "extra": {
       "eas": {
-        "projectId": "replace-with-eas-project-id"
+        "projectId": "1aac6e16-ee14-4f32-b129-edcc1044a218"
       }
-    }
+    },
+    "owner": "rsuhas"
   }
 }

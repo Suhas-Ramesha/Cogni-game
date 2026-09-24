@@ -25,9 +25,25 @@ export default function PatientsPage() {
   const [query, setQuery] = useState('');
 
   useEffect(() => {
-    api<Row[]>('/patients')
-      .then(setRows)
-      .catch((e) => setError((e as Error).message));
+    let cancelled = false;
+    async function load() {
+      try {
+        const next = await api<Row[]>('/patients');
+        if (!cancelled) {
+          setRows(next);
+          setError(null);
+        }
+      } catch (e) {
+        if (!cancelled) setError((e as Error).message);
+      }
+    }
+    void load();
+    const onLive = () => void load();
+    window.addEventListener('cg-live', onLive);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('cg-live', onLive);
+    };
   }, []);
 
   const filtered = useMemo(() => {
@@ -48,7 +64,7 @@ export default function PatientsPage() {
     <Shell title="Your patients" eyebrow="Caseload">
       {error ? (
         <ErrorBanner>
-          Could not load patients. Start the API (`pnpm dev:api`) and seed data, then refresh.
+          Could not load patients. Check that you are signed in and the API is running, then refresh.
         </ErrorBanner>
       ) : null}
 

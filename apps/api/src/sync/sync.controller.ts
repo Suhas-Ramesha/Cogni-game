@@ -47,6 +47,12 @@ export class SyncController {
   @Post('push')
   push(@Body() body: PushDto, @CurrentUser() user: AuthPrincipal) {
     const patientId = user.role === 'patient' && user.patientId ? user.patientId : body.patientId;
-    return this.sync.push(patientId, body.deviceId, body.changes, body.lastPulledAt ?? null);
+    return this.sync.push(
+      patientId,
+      body.deviceId,
+      body.changes,
+      body.lastPulledAt ?? null,
+      user.caregiverId,
+    );
   }
 }

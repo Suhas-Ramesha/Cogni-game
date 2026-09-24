@@ -1,8 +1,11 @@
+import { isRunningInExpoGo } from 'expo';
+
 type NotificationsModule = typeof import('expo-notifications');
 
-let notificationsReady: Promise<NotificationsModule> | null = null;
+let notificationsReady: Promise<NotificationsModule | null> | null = null;
 
 function loadNotifications() {
+  if (isRunningInExpoGo()) return Promise.resolve(null);
   notificationsReady ??= import('expo-notifications').then((Notifications) => {
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
@@ -20,6 +23,7 @@ function loadNotifications() {
 
 export async function ensureNotificationPermission() {
   const Notifications = await loadNotifications();
+  if (!Notifications) return false;
   const current = await Notifications.getPermissionsAsync();
   if (current.granted) return true;
   const asked = await Notifications.requestPermissionsAsync();
@@ -33,8 +37,9 @@ export async function scheduleReminder(input: {
   repeats?: boolean;
 }) {
   const Notifications = await loadNotifications();
+  if (!Notifications) return null;
   await ensureNotificationPermission();
-  const id = await Notifications.scheduleNotificationAsync({
+  return Notifications.scheduleNotificationAsync({
     content: { title: input.title, body: input.body, sound: true },
     trigger: input.repeats
       ? {
@@ -47,10 +52,10 @@ export async function scheduleReminder(input: {
           date: input.when,
         },
   });
-  return id;
 }
 
 export async function cancelReminder(id: string) {
   const Notifications = await loadNotifications();
+  if (!Notifications) return;
   await Notifications.cancelScheduledNotificationAsync(id);
 }

@@ -35,6 +35,9 @@ export default function AlertsPage() {
 
   useEffect(() => {
     void load();
+    const onLive = () => void load();
+    window.addEventListener('cg-live', onLive);
+    return () => window.removeEventListener('cg-live', onLive);
   }, []);
 
   const visible = useMemo(() => {

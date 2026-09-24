@@ -10,7 +10,6 @@ coverage
 .env
 .env.local
 .env.*.local
-*firebase-adminsdk*.json
 *.tsbuildinfo
 .DS_Store
 apps/api/generated

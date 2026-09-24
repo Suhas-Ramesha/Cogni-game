@@ -1,10 +1,12 @@
+import { useEffect } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
 import { t, type GameType } from '@cognigame/shared-types';
 import { BigButton } from '../ui/BigButton';
 import { Screen } from '../ui/Screen';
-import { useSession } from '../state/session';
+import { playedToday, useSession } from '../state/session';
+import { synchronizeIfOnline } from '../db/sync';
 
 type FeatherName = ComponentProps<typeof Feather>['name'];
 
@@ -26,9 +28,14 @@ export function HomeScreen({
   const language = useSession((s) => s.language);
   const online = useSession((s) => s.online);
   const syncing = useSession((s) => s.syncing);
+  const activity = useSession((s) => s.activity);
   const statusKey = syncing ? 'syncing' : online ? 'online' : 'offline';
   const statusColor = syncing ? '#8A5A00' : online ? '#1F6F4A' : '#9B1D20';
   const statusBg = syncing ? '#F7E3B0' : online ? '#E4EDE6' : '#F8D7D8';
+
+  useEffect(() => {
+    void synchronizeIfOnline();
+  }, []);
 
   return (
     <Screen>
@@ -53,41 +60,55 @@ export function HomeScreen({
         {t(language, 'hello')}
       </Text>
 
-      {GAMES.map((g) => (
-        <Pressable
-          key={g.type}
-          accessibilityRole="button"
-          accessibilityLabel={t(language, g.key)}
-          onPress={() => onPlay(g.type)}
-          android_ripple={{ color: 'rgba(255,251,250,0.15)' }}
-          style={({ pressed }) => ({
-            minHeight: 88,
-            borderRadius: 28,
-            backgroundColor: '#0F3D2E',
-            paddingHorizontal: 22,
-            marginVertical: 8,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 16,
-            opacity: pressed ? 0.9 : 1,
-          })}
-        >
-          <View
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 16,
-              backgroundColor: '#1F6F4A',
+      {GAMES.map((g) => {
+        const done = playedToday(activity, g.type);
+        return (
+          <Pressable
+            key={g.type}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: done }}
+            accessibilityLabel={done ? `${t(language, g.key)}. ${t(language, 'doneToday')}` : t(language, g.key)}
+            disabled={done}
+            onPress={() => onPlay(g.type)}
+            android_ripple={{ color: 'rgba(255,251,250,0.15)' }}
+            style={({ pressed }) => ({
+              minHeight: 88,
+              borderRadius: 28,
+              backgroundColor: done ? '#E4EDE6' : '#0F3D2E',
+              paddingHorizontal: 22,
+              marginVertical: 8,
+              flexDirection: 'row',
               alignItems: 'center',
-              justifyContent: 'center',
-            }}
+              gap: 16,
+              opacity: pressed ? 0.9 : 1,
+            })}
           >
-            <Feather name={g.icon} size={24} color="#FFFBFA" />
-          </View>
-          <Text style={{ color: '#FFFBFA', fontSize: 24, fontWeight: '700', flex: 1 }}>{t(language, g.key)}</Text>
-          <Feather name="chevron-right" size={24} color="#E0A100" />
-        </Pressable>
-      ))}
+            <View
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 16,
+                backgroundColor: done ? '#1F6F4A' : '#1F6F4A',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Feather name={done ? 'check' : g.icon} size={24} color="#FFFBFA" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: done ? '#0F3D2E' : '#FFFBFA', fontSize: 24, fontWeight: '700' }}>
+                {t(language, g.key)}
+              </Text>
+              {done ? (
+                <Text style={{ color: '#1F6F4A', fontSize: 18, fontWeight: '700', marginTop: 2 }}>
+                  {t(language, 'doneToday')}
+                </Text>
+              ) : null}
+            </View>
+            {done ? null : <Feather name="chevron-right" size={24} color="#E0A100" />}
+          </Pressable>
+        );
+      })}
 
       <View style={{ height: 8 }} />
       <BigButton label={t(language, 'reminders')} onPress={onReminders} tone="accent" />

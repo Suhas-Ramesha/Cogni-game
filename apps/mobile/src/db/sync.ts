@@ -36,6 +36,7 @@ export async function synchronizeIfOnline() {
   try {
     const last = useSession.getState().lastPulledAt;
     const pulled = await pullChanges(last);
+    useSession.getState().applyPull(pulled.changes);
     useSession.getState().setLastPulledAt(pulled.timestamp);
     const pending = useSession.getState().pendingChanges;
     if (Object.keys(pending).length) {

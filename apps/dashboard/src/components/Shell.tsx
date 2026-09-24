@@ -55,8 +55,12 @@ export function Shell({
     if (!caregiverId) return undefined;
     const socket = io(`${API_URL}/live`, { transports: ['websocket', 'polling'] });
     socket.emit('join', { caregiverId });
-    socket.on('alert', () => void refresh());
-    socket.on('sync', () => void refresh());
+    const ping = () => {
+      void refresh();
+      window.dispatchEvent(new Event('cg-live'));
+    };
+    socket.on('alert', ping);
+    socket.on('sync', ping);
     return () => {
       cancelled = true;
       socket.close();
@@ -112,8 +116,8 @@ export function Shell({
         </nav>
         <div className="mt-auto hidden pt-8 lg:block">
           <p className="text-[11px] uppercase tracking-[0.22em] text-mist/80">Signed in</p>
-          <p className="mt-1 font-medium">{caregiver?.name ?? 'Anjali Das'}</p>
-          <p className="text-sm capitalize text-mist">{caregiver?.role?.replaceAll('_', ' ') ?? 'Health worker'}</p>
+          <p className="mt-1 font-medium">{caregiver?.name ?? 'Caregiver'}</p>
+          <p className="text-sm capitalize text-mist">{caregiver?.role?.replaceAll('_', ' ') ?? ''}</p>
           <p className="mt-3 flex items-center gap-2 text-xs tabular text-mist">
             <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />
             IST {clock || '—'}

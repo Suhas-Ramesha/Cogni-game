@@ -6,7 +6,7 @@ import { BigButton } from '../ui/BigButton';
 import { Screen } from '../ui/Screen';
 import { useSession } from '../state/session';
 import { speak } from '../voice/tts';
-import { queueChange } from '../db/sync';
+import { queueChange, synchronizeIfOnline } from '../db/sync';
 
 type Tile = { tileId: string; assetId: string; label: string; emoji?: string };
 type Choice = { id: string; label?: string; emoji?: string; color?: string; glyph?: string };
@@ -53,26 +53,47 @@ export function GameScreen({ type, onExit }: { type: GameType; onExit: () => voi
 
   function finish(raw: unknown) {
     if (done) return;
-    const result = game.score({ raw }, round, { startedAtMs: started.current, finishedAtMs: Date.now() });
+    const finishedAt = Date.now();
+    const result = game.score({ raw }, round, { startedAtMs: started.current, finishedAtMs: finishedAt });
+    const id = sessionId();
     try {
       queueChange(
         'game_sessions',
         {
-          id: sessionId(),
-          patient_id: useSession.getState().patientId,
-          game_type: result.gameType,
-          difficulty_level: result.difficultyLevel,
+          id,
+          patientId: useSession.getState().patientId,
+          gameType: result.gameType,
+          difficultyLevel: result.difficultyLevel,
           score: result.score,
           accuracy: result.accuracy,
-          reaction_time_ms: result.reactionTimeMs,
-          completed_at: Date.now(),
-          field_clocks: JSON.stringify({ '*': Date.now() }),
-          created_at: Date.now(),
-          updated_at: Date.now(),
-          metadata: JSON.stringify(result.metadata ?? {}),
+          reactionTimeMs: result.reactionTimeMs,
+          completedAt: finishedAt,
+          fieldClocks: { '*': finishedAt },
+          metadata: result.metadata ?? {},
         },
         'created',
       );
+      const mood = (raw as { mood?: string } | null)?.mood;
+      if (result.gameType === 'emotional_engagement' && mood) {
+        queueChange(
+          'mood_check_ins',
+          {
+            id: `mood-${id}`,
+            patientId: useSession.getState().patientId,
+            mood,
+            recordedAt: finishedAt,
+            fieldClocks: { mood: finishedAt },
+          },
+          'created',
+        );
+      }
+      useSession.getState().rememberSession({
+        id,
+        gameType: result.gameType,
+        completedAt: finishedAt,
+        accuracy: result.accuracy,
+      });
+      void synchronizeIfOnline();
     } catch {
       // A failed local queue must not block the round result.
     }
